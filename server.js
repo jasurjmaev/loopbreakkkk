@@ -113,45 +113,78 @@ G.sudo=(r,d)=>{const pm=[1,2,3,4].sort(()=>r()-.5);let g=[1,2,3,4,3,4,1,2,2,1,4,
  for(const i of [...Array(16).keys()].sort(()=>r()-.5)){if(g.filter(x=>x).length<=keep)break;const v=g[i];g[i]=0;if(sdc([...g])!==1)g[i]=v}
  const DG=['⬜','1️⃣','2️⃣','3️⃣','4️⃣'],q=ri(r,0,3);
  return{c:["Seyf paneli (4×4):\n"+[0,1,2,3].map(y=>g.slice(y*4,y*4+4).map(v=>DG[v]).join('')).join('\n'),"Qoida: har qator, har ustun va har 2×2 qism (to'rt burchak) 1,2,3,4 raqamlarini bir martadan o'z ichiga olsin. ⬜ — bo'sh katak."],q:`Panel to'ldirilgach ${q+1}-qator raqamlari (probelsiz, chapdan o'ngga)?`,a:SOL.slice(q*4,q*4+4).join(''),h:`Qatorning birinchi raqami ${SOL[q*4]}`}};
-const PL={1:['bin','cipher','seq','lock'],2:['morse','book','maze','morse','book','maze'],3:['liar','roles','order','liar','roles','order'],4:['mind','dial','eq','mind','dial','eq','mind'],5:['timeline','clock','lcm','timeline','clock','lcm','timeline','lcm'],6:['vig','evid','sudo','vig','sudo','evid','sudo','vig','evid'],7:['roles','mind','vig','sudo','dial','lcm','evid','maze','order','evid'],8:['evid','sudo','mind','vig','dial','evall']};
-const TT=['','Qoldiq izlar','Yopiq kutubxona','Ikki guvoh','Yopiq seyf','Soat sinovi','Xiyonat soyasi','Laboratoriya','Maxfiy yakun'];
-const S=['',"Tun. Siz tashlandiq xarobaga yetib keldingiz, devorlarda yangi izlar bor.","Yopiq kutubxona. Changli javonlar orasida kimdir shoshilib nimadir yashirgan.","Ikki guvoh bir-biriga zid gapiryapti. Kim haqiqatni aytyapti?","Yopiq seyf xonasi: raqamlar, disklar va yoshlar sirini ochish kerak.","Barcha tizimlar bir vaqtda ishga tushdi. Har daqiqa muhim.","Jamoa ichida kimdir sirni sotgan. Dalillar bir-biriga zid.","Laboratoriyaning yopiq qismi. Oldingi boblardagi dalillar endi kerak bo'ladi.","Maxfiy yakun. Hamma dalil va qarorlar hal qiladi."];
+const PL={1:['bin','cipher','seq','lock'],2:['morse','book','maze','morse','book','maze'],3:['liar','roles','order','liar','roles','order'],4:['mind','dial','eq','mind','dial','eq','mind'],5:['timeline','clock','lcm','timeline','clock','lcm','timeline','lcm'],6:['vig','evid','sudo','vig','sudo','evid','sudo','vig','evid'],7:['roles','mind','vig','sudo','dial','lcm','evid','maze','order','evid'],8:['evid','sudo','mind','vig','dial','evall'],9:['sudo','roles','mind','order','vig','maze','dial','lcm','evid','eq','clock'],10:['evid','mind','roles','sudo','vig','order','dial','evall']};
+const TT=['','Qoldiq izlar','Yopiq kutubxona','Ikki guvoh','Yopiq seyf','Soat sinovi','Xiyonat soyasi','Laboratoriya','Maxfiy yakun','Soya laboratoriyasi',"Oxirgi qo'ng'iroq"];
+const S=['',"Tun. Siz tashlandiq xarobaga yetib keldingiz, devorlarda yangi izlar bor.","Yopiq kutubxona. Changli javonlar orasida kimdir shoshilib nimadir yashirgan.","Ikki guvoh bir-biriga zid gapiryapti. Kim haqiqatni aytyapti?","Yopiq seyf xonasi: raqamlar, disklar va yoshlar sirini ochish kerak.","Barcha tizimlar bir vaqtda ishga tushdi. Har daqiqa muhim.","Jamoa ichida kimdir sirni sotgan. Dalillar bir-biriga zid.","Laboratoriyaning yopiq qismi. Oldingi boblardagi dalillar endi kerak bo'ladi.","Maxfiy yakun. Hamma dalil va qarorlar hal qiladi.","Soya laboratoriyasi: eng chuqur qatlam, eng qiyin jumboqlar.","Oxirgi qo'ng'iroq. Hamma narsa shu yerda hal bo'ladi."];
 const KD={morse:'Morze signallari.',book:'Kitob shifri.',maze:'Labirint xaritasi.',roles:'Guvohlar: kim rostgo\'y, kim yolg\'onchi?',eq:'Yoshlar jumbog\'i.',clock:'Buzuq soat.',lcm:'Soqchilar navbati.',sudo:'Seyf paneli.',mind:'Qulf paneli: oldingi urinishlar izlari qolgan.',order:'Kirish jurnali: kim qachon kirgani.',dial:'Mexanik disklar.',vig:'Kalitli shifr.',bin:'Binar chiroqlar.',cipher:'Shifrlangan yozuv.',seq:'Eshik paneli.',lock:'Raqamli qulf.',liar:"So'roq: guvohlardan biri yolg'on gapiryapti.",timeline:'Kuzatuv jurnali.',evid:'Dalillar arxivi.',evall:'Yakuniy mexanizm.'};
 // ---------- AI (ixtiyoriy): faqat sahna matnini yozadi, javoblarni server tekshiradi ----------
 async function ai(p){if(!AK)return'';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AK,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.AI_MODEL||'claude-haiku-5-5',max_tokens:220,messages:[{role:'user',content:p}]}),signal:AbortSignal.timeout(8000)});const j=await r.json();const t=(j.content?.[0]?.text||'').trim();if(!t)console.log('AI xato:',JSON.stringify(j.error||j).slice(0,200));return t}catch(e){console.log('AI xato:',e.message);return''}}
 // ---------- O'yin mantiqi ----------
 const prem=u=>u.prem>Date.now(),ow=s=>db.u[s.m[0]];
-const mk=(m,ch,ev,n)=>({m,n,ch,step:0,seed:Math.random()*1e9|0,en:100,ev:Object.fromEntries(Object.entries(ev).filter(([k])=>+k<ch)),fl:{ally:0,hid:0},st:'puz',v:1,fh:0,msg:'',chat:[]});
-async function enter(s){const kind=PL[s.ch][s.step],d=Math.min(s.ch+(s.step>>1),9),p=G[kind](rng(s.seed+s.ch*97+s.step*13),d,s.ev,s.prev);s.att=0;
+const mk=(m,ch,ev,n)=>({m,n,ch,step:0,seed:Math.random()*1e9|0,en:100,ev:Object.fromEntries(Object.entries(ev).filter(([k])=>+k<ch)),fl:{ally:0,hid:m.some(id=>db.u[id]&&db.u[id].own&&db.u[id].own.includes('key'))?1:0},st:'puz',v:1,fh:0,msg:'',chat:[]});
+async function enter(s){const kind=KS(s)[s.step],d=Math.min(s.ch+(s.step>>1),9),p=G[kind](rng(s.seed+s.ch*97+s.step*13),d,s.ev,s.prev);s.att=0;
+ let tw=0;if(d>=3&&s.step>=2&&Math.random()<.2){tw=1;p.q+=' ⚠️ DIQQAT: javobni TESKARI (oxiridan boshlab) yozing!';p.a=[...String(p.a)].reverse().join('');p.h="Avval javobni toping, so'ng teskari yozing. "+p.h}
  const base=`${S[s.ch]} ${KD[kind]}`;
  const t=await ai(`Detektiv o'yin muallifi sifatida o'zbek tilida 2 gapdan iborat qisqa sahna yoz. Bob: "${TT[s.ch]}". Vaziyat: ${KD[kind]} Ittifoqchilar: ${s.fl.ally}, yashirilgan dalillar: ${s.fl.hid}. Faqat atmosfera: hech qanday raqam, javob yoki yechim yozma.`);
- s.cur={c:p.c,q:p.q,a:p.a,h:p.h,story:t||base,ai:!!t,hinted:0};s.st='puz';s.v++}
-async function chap(s){s.step=0;s.dl=Date.now()+(15+PL[s.ch].length*6)*6e4;s.fh=Math.min(s.fl.ally,2);s.en=Math.max(s.en,40);await enter(s)}
+ s.cur={c:p.c,q:p.q,a:p.a,h:p.h,story:t||base,ai:!!t,tw,hinted:0};s.st='puz';s.v++}
+async function chap(s){const a=[...PL[s.ch]],last=a.pop(),r=rng(s.seed+s.ch*31);a.sort(()=>r()-.5);(s.pl||={})[s.ch]=[...a,last];
+ s.step=0;s.er=0;s.sh=0;s.dl=Date.now()+(15+a.length*6)*6e4;s.fh=Math.min(s.fl.ally,2);s.en=Math.max(s.en,40);
+ if(s.n>1){const o=[0,1,2,3,4].sort(()=>r()-.5);s.rl={};s.m.forEach((id,i)=>s.rl[id]=o[i%5])}
+ s.log=s.log||[];await enter(s)}
 async function hurt(s){if(s.en<=0){s.en=60;s.seed=Math.random()*1e9|0;s.msg="💀 Energiya tugadi. Bob yangi jumboqlar bilan qayta boshlandi.";await chap(s)}}
 function fin(s){const ok=Date.now()<=s.dl,r=rng(s.seed+s.ch);if(ok)s.ev[s.ch]={n:ri(r,10,99),w:pick(r,W)};
- for(const id of s.m){const u=db.u[id];if(!u)continue;u.ev={...u.ev,...s.ev};if(!u.done.includes(s.ch))u.done.push(s.ch);u.max=Math.max(u.max,Math.min(s.ch+1,8))}
+ for(const id of s.m){const u=db.u[id];if(!u)continue;u.ev={...u.ev,...s.ev};if(!u.done.includes(s.ch))u.done.push(s.ch);u.max=Math.max(u.max,Math.min(s.ch+1,10));u.cnt++;if(s.n>1)u.tw++;if(!s.er)u.clean++;if(s.ch>=7&&s.n>1)u.hardteam++;ach(u)}
+ s.cl=s.m[Math.floor(Math.random()*s.m.length)];(s.log=s.log||[]).push(`${s.ch}-bob yakunlandi${ok?': dalil topildi':": dalil yo'qoldi"}`);
  s.msg=ok?"🗝 Bob yakunlandi, yangi dalil topildi!":"⏳ Vaqt o'tib ketdi — dalil yo'qoldi.";s.st='choice'}
-function endg(s){s.st='end';s.end=s.ch>=8?(s.fl.ally>=3?'true':'secret'):'good';for(const id of s.m){const u=db.u[id];if(u&&!u.end.includes(s.end))u.end.push(s.end)}s.v++}
-async function nxt(s){if(s.ch>=8||(s.ch===7&&Object.keys(s.ev).length<7))return endg(s);s.ch++;if(s.ch>=7&&!prem(ow(s))){s.st='lock';s.v++;return}await chap(s)}
-const view=(s,uid)=>{const i=Math.max(0,s.m.indexOf(uid)),c=s.cur||{};return{k:s.st,ch:s.ch,t:TT[s.ch],step:s.step+1,tot:(PL[s.ch]||[]).length,story:c.story,clues:(c.c||[]).filter((_,j)=>j%s.n===i),role:s.n>1?`${i+1}/${s.n}`:'',n:s.n,q:c.q,en:s.en,ev:s.ev,hint:c.hinted?c.h:'',fh:s.fh,dl:s.dl,v:s.v,msg:s.msg,fl:s.fl,end:s.end,ai:c.ai?1:0,chat:(s.chat||[]).slice(-40)}};
+function endg(s){s.st='end';s.end=s.ch>=8?(s.fl.ally>=3?'true':'secret'):'good';for(const id of s.m){const u=db.u[id];if(!u)continue;if(!u.end.includes(s.end))u.end.push(s.end);u.games++;pay(u,15,"O'yin yakuni bonusi");ach(u)}s.v++}
+async function nxt(s){if(s.ch===8||s.ch>=10||(s.ch===7&&Object.keys(s.ev).length<7))return endg(s);s.ch++;if(s.ch>=9&&!prem(ow(s))){s.st='lock';s.v++;return}await chap(s)}
+const view=(s,uid)=>{const i=Math.max(0,s.m.indexOf(uid)),c=s.cur||{},u=db.u[uid]||{inv:{}},K=KS(s),ro=s.rl&&s.rl[uid];
+ let cl=(c.c||[]).filter((_,j)=>j%s.n===i);if(s.n>1&&ro!==undefined&&ro===KR[K[s.step]]&&c.h)cl=[...cl,`🔎 ${ROLES[ro]} ma'lumoti: ${c.h}`];
+ return{k:s.st,ch:s.ch,t:TT[s.ch],step:s.step+1,tot:K.length,story:c.story,clues:cl,role:s.n>1?`${i+1}/${s.n}`:'',rn:s.n>1&&ro!==undefined?ROLES[ro]:'',n:s.n,q:c.q,en:s.en,ev:s.ev,hint:c.hinted?c.h:'',fh:s.fh,dl:s.dl,v:s.v,msg:s.msg,fl:s.fl,end:s.end,ai:c.ai?1:0,tw:c.tw?1:0,coins:u.coins||0,cn:(s.cn||{})[uid]||0,cl:(s.cl===uid||!s.m.includes(s.cl))?1:0,cln:s.cl&&db.u[s.cl]?nn(db.u[s.cl]):'',log:(s.log||[]).slice(-8),chat:(s.chat||[]).slice(-40),hi:u.inv.hint||0}};
 const ses=(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))throw new Error("O'yin topilmadi");return s};
-const U=x=>{const u=db.u[x.id]||={id:x.id,max:1,done:[],ev:{},end:[],prem:0,room:null};u.name=(x.first_name||"O'yinchi").slice(0,20);return u};
+const DEF=()=>({coins:0,hist:[],inv:{},own:[],eq:{},nick:'',ok:0,bad:0,games:0,streak:0,days:[],ach:[],cnt:0,tw:0,clean:0,hardteam:0,dy:{d:0,ok:0,att:0}});
+const U=x=>{const u=db.u[x.id]||={id:x.id,max:1,done:[],ev:{},end:[],prem:0,room:null};const D=DEF();for(const k in D)if(!(k in u))u[k]=D[k];u.name=(x.first_name||"O'yinchi").slice(0,20);
+ const t=new Date().toISOString().slice(0,10);if(!u.days.includes(t)){u.days.push(t);if(u.days.length>400)u.days.shift()}return u};
+const nn=u=>u.nick||u.name,pay=(u,n,w)=>{u.coins+=n;u.hist.unshift({t:Date.now(),n,w});if(u.hist.length>40)u.hist.length=40};
+const AC=[['first','Birinchi qadam','1-bobni tugatish',20,u=>u.done.includes(1)],['sharp',"O'tkir zehn","Ketma-ket 5 ta to'g'ri javob",30,u=>u.streak>=5],['hero','Jamoa qahramoni','Jamoa bilan bobni yakunlash',50,u=>u.tw>0],['truth','Yashirin haqiqat','Yashirin yoki haqiqiy yakunni ochish',100,u=>u.end.some(e=>e!=='good')],['ten','Chempion','10 ta bobni tugatish',60,u=>u.cnt>=10],['three','Uch yakun','3 xil yakunni ochish',80,u=>u.end.length>=3],['week','7 kun',"7 kun o'ynash",70,u=>u.days.length>=7],['clean','Xatosiz bob','Bobni birorta xatosiz tugatish',40,u=>u.clean>0],['hard','Eng qiyin bob','7-bobni jamoa bilan yengish',80,u=>u.hardteam>0]];
+const ach=u=>{for(const a of AC)if(!u.ach.includes(a[0])&&a[4](u)){u.ach.push(a[0]);pay(u,a[3],'🏆 '+a[1])}};
+const IT=[{id:'crown',n:'👑 Chat toji',p:100,k:'own',d:"Chatda ismingiz oldida toj"},{id:'e_wolf',n:"🐺 Bo'ri",p:40,k:'emo',v:'🐺',d:'Chat emojisi'},{id:'e_skull',n:'💀 Bosh suyagi',p:40,k:'emo',v:'💀',d:'Chat emojisi'},{id:'e_det',n:'🕵️ Detektiv',p:40,k:'emo',v:'🕵️',d:'Chat emojisi'},{id:'e_fire',n:'🔥 Olov',p:40,k:'emo',v:'🔥',d:'Chat emojisi'},
+{id:'t_det',n:'DETECTIVE laqabi',p:150,k:'title',v:'DETECTIVE',d:'Chatda ism yonida'},{id:'t_sh',n:'SHADOW laqabi',p:150,k:'title',v:'SHADOW',d:'Chatda ism yonida'},{id:'t_ls',n:'LAST SURVIVOR laqabi',p:250,k:'title',v:'LAST SURVIVOR',d:'Chatda ism yonida'},
+{id:'n_gold',n:'Oltin nik',p:120,k:'nick',v:'gold',d:'Nikingiz oltin rangda'},{id:'n_neon',n:'Neon nik',p:120,k:'nick',v:'neon',d:'Nikingiz neon rangda'},{id:'frame',n:'✨ Neon avatar ramkasi',p:200,k:'frame',v:'frm',d:'Profilda yorqin ramka'},
+{id:'hint',n:"🔍 Qo'shimcha ishora",p:250,k:'cons',d:"1 ta bepul maslahat (javobni ochmaydi)"},{id:'shield',n:'🛡️ Bir martalik himoya',p:300,k:'cons',d:"Bitta xatoning energiya jazosini yo'qotadi"},
+{id:'badge',n:'🏅 Afsonaviy belgi',p:400,k:'own',d:'Profil va chatda maxsus belgi'},{id:'key',n:'🗝️ Maxsus imkoniyat',p:600,k:'own',d:"Har o'yinni 1 ta yashirin dalil bilan boshlaysiz"}];
+const pre=u=>(u.own.includes('badge')?'🏅':'')+(u.own.includes('crown')?'👑':'')+(u.eq.emoji||'')+(u.eq.title?` [${u.eq.title}]`:'');
+const ROLES=['🕵️ Detektiv','🔐 Haker','👁️ Kuzatuvchi',"🧭 Yo'lboshchi",'🛡️ Himoyachi'],KR={liar:0,roles:0,order:0,evid:0,evall:0,cipher:1,bin:1,morse:1,book:1,vig:1,lock:1,dial:1,mind:1,maze:2,sudo:2,timeline:3,clock:3,lcm:3,seq:3,eq:3};
+const KS=s=>(s.pl&&s.pl[s.ch])||PL[s.ch];
+const DK=['cipher','mind','order','roles','sudo','dial','lcm','vig','maze','eq','clock','book'],dayN=()=>Math.floor(Date.now()/864e5);
+const dgen=()=>{const n=dayN(),k=DK[n%DK.length];return{k,p:G[k](rng(n*7919+13),4+(n%5),{},'')}};
+const dyc=u=>{if(u.dy.d!==dayN())u.dy={d:dayN(),ok:0,att:0};return u.dy};
 const E=m=>{throw new Error(m)};
 const H={
- me:u=>({id:u.id,name:u.name,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=7&&!prem(u),open:n<=u.max})).slice(1)}),
- solo:async(u,b)=>{const n=+b.ch;if(!(n>=1&&n<=8))E('Bunday bob yo\'q');if(n>u.max)E('Bu bob hali yopiq');if(n>=7&&!prem(u))E("Bu bob Premium uchun. Botda 💎 Premium bo'limiga kiring.");const s=db.s['s'+u.id]=mk([u.id],n,u.ev,1);await chap(s);return view(s,u.id)},
+ me:u=>{ach(u);return{id:u.id,name:nn(u),tg:u.name,nick:u.nick,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,coins:u.coins,hist:u.hist.slice(0,25),own:u.own,eq:u.eq,inv:u.inv,ok:u.ok,bad:u.bad,games:u.games,days:u.days.length,cnt:u.cnt,items:IT,acs:AC.map(a=>({id:a[0],t:a[1],d:a[2],c:a[3],done:u.ach.includes(a[0])})),room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=9&&!prem(u),open:n<=u.max})).slice(1)}},
+ solo:async(u,b)=>{const n=+b.ch;if(!(n>=1&&n<=10))E('Bunday bob yo\'q');if(n>u.max)E('Bu bob hali yopiq');if(n>=9&&!prem(u))E("Bu bob Premium uchun. Botda 💎 Premium bo'limiga kiring.");const s=db.s['s'+u.id]=mk([u.id],n,u.ev,1);await chap(s);return view(s,u.id)},
  state:async(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))return{k:'none'};if(s.st==='lock'&&prem(ow(s))){s.msg='💎 Premium faol!';await chap(s)}return view(s,u.id)},
  answer:async(u,b)=>{const s=ses(u,b);if(s.st!=='puz')return view(s,u.id);
   if(s.lk>Date.now())E(`Ko'p xato qildingiz. ${Math.ceil((s.lk-Date.now())/1000)} soniya o'ylab ko'ring.`);
-  if(norm(b.a)===norm(s.cur.a)){s.msg=`✅ ${u.name} to'g'ri topdi!`;s.prev=s.cur.a;s.att=0;s.lk=0;s.step++;if(s.step>=PL[s.ch].length)fin(s);else await enter(s)}
-  else{const c=10+2*s.ch;s.en-=c;s.att=(s.att||0)+1;if(s.att>=3)s.lk=Date.now()+3e4*(s.att-2);s.msg=`❌ ${u.name}: noto'g'ri. −${c} energiya.${s.att>=3?' Taxmin qilish ishlamaydi: kutish jazosi.':''}`;await hurt(s)}
+  if(norm(b.a)===norm(s.cur.a)){const c=2+3*s.ch;pay(u,c,`${s.ch}-bob: to'g'ri javob`);(s.cn=s.cn||{})[u.id]=(s.cn[u.id]||0)+c;u.ok++;u.streak++;ach(u);s.msg=`✅ ${nn(u)} to'g'ri topdi! +${c} 🪙`;s.prev=s.cur.a;s.att=0;s.lk=0;s.step++;if(s.step>=KS(s).length)fin(s);else await enter(s)}
+  else{u.bad++;u.streak=0;s.er=(s.er||0)+1;s.att=(s.att||0)+1;if(s.att>=3)s.lk=Date.now()+3e4*(s.att-2);let c=10+2*s.ch,sh='';
+   if(u.inv.shield>0){u.inv.shield--;c=0;sh=' 🛡️ Himoya ishladi.'}else if(s.n>1&&!s.sh&&s.m.some(id=>s.rl&&s.rl[id]===4)){s.sh=1;c=0;sh=' 🛡️ Himoyachi jamoani himoya qildi.'}
+   s.en-=c;s.msg=`❌ ${nn(u)}: noto'g'ri. −${c} energiya.${sh}${s.att>=3?' Kutish jazosi.':''}`;await hurt(s)}
   s.v++;return view(s,u.id)},
- hint:async(u,b)=>{const s=ses(u,b);if(s.st!=='puz'||s.cur.hinted)return view(s,u.id);if(s.fh>0)s.fh--;else s.en-=15;s.cur.hinted=1;s.msg='💡 Maslahat ochildi.';await hurt(s);s.v++;return view(s,u.id)},
- chat:async(u,b)=>{const s=ses(u,b),t=String(b.t||'').trim().slice(0,300);if(t){(s.chat=s.chat||[]).push({id:u.id,n:u.name,t});if(s.chat.length>100)s.chat.shift();s.v++}return view(s,u.id)},
- choice:async(u,b)=>{const s=ses(u,b);if(s.st!=='choice')return view(s,u.id);
-  if(b.c==='a'){s.fl.ally++;s.en=Math.min(100,s.en+30);s.msg="🤝 Yordam berdingiz: ittifoqchi paydo bo'ldi (+30 energiya).";}
-  else{s.fl.hid++;s.en=Math.max(10,s.en-20);s.msg='🕶 Dalilni yashirdingiz (−20 energiya). Bu sirlar keyin ochilishi mumkin.'}
+ hint:async(u,b)=>{const s=ses(u,b);if(s.st!=='puz'||s.cur.hinted)return view(s,u.id);if(s.fh>0)s.fh--;else if(u.inv.hint>0)u.inv.hint--;else s.en-=15;s.cur.hinted=1;s.msg='💡 Maslahat ochildi.';await hurt(s);s.v++;return view(s,u.id)},
+ chat:async(u,b)=>{const s=ses(u,b),t=String(b.t||'').trim().slice(0,300);if(t){(s.chat=s.chat||[]).push({id:u.id,n:nn(u),t,p:pre(u),nc:u.eq.nick||''});if(s.chat.length>100)s.chat.shift();s.v++}return view(s,u.id)},
+ choice:async(u,b)=>{const s=ses(u,b);if(s.st!=='choice')return view(s,u.id);if(s.n>1&&s.m.includes(s.cl)&&s.cl!==u.id)E(`Qaror qo'ng'iroq olgan o'yinchida: ${nn(db.u[s.cl])}`);
+  if(b.c==='a'){s.fl.ally++;s.en=Math.min(100,s.en+30);s.msg="🤝 Jamoani qutqardingiz: ittifoqchi paydo bo'ldi (+30 energiya).";(s.log=s.log||[]).push('🤝 Jamoa qutqarildi')}
+  else{s.fl.hid++;s.en=Math.max(10,s.en-20);s.msg='🕵️ Haqiqatni tanladingiz (−20 energiya). Yashirin dalil sizda.';(s.log=s.log||[]).push('🕵️ Haqiqat tanlandi')}
   await nxt(s);s.v++;return view(s,u.id)},
+ buy:(u,b)=>{const it=IT.find(x=>x.id===b.id);if(!it)E('Buyum topilmadi');if(u.coins<it.p)E(`Tanga yetmaydi: ${it.p} 🪙 kerak`);
+  if(it.k==='cons')u.inv[it.id]=(u.inv[it.id]||0)+1;else{if(u.own.includes(it.id))E('Bu buyumni allaqachon olgansiz');u.own.push(it.id);if(it.v)u.eq[it.k==='emo'?'emoji':it.k]=it.v}
+  pay(u,-it.p,`Xarid: ${it.n}`);return H.me(u)},
+ equip:(u,b)=>{const it=IT.find(x=>x.id===b.id);if(!it||!it.v||!u.own.includes(it.id))E('Avval sotib oling');const k=it.k==='emo'?'emoji':it.k;if(u.eq[k]===it.v)delete u.eq[k];else u.eq[k]=it.v;return H.me(u)},
+ nick:(u,b)=>{const n=String(b.n||'').trim();if(!/^[A-Za-z0-9_]{3,16}$/.test(n))E("Nik 3–16 belgi bo'lsin: lotin harf, raqam yoki _");if(/(admin|fuck|shit|bitch|sikaman|qotoq|jinni|loopbreak)/i.test(n))E("Bu nikdan foydalanib bo'lmaydi");
+  if(Object.values(db.u).some(x=>x.id!==u.id&&(x.nick||'').toLowerCase()===n.toLowerCase()))E('Bu nik band');u.nick=n;return H.me(u)},
+ daily:u=>{const g=dgen(),t=dyc(u);return{c:g.p.c,q:g.p.q,ok:t.ok,att:t.att,max:5}},
+ dailyans:(u,b)=>{const g=dgen(),t=dyc(u);if(t.ok)E('Bugun bajarilgan');if(t.att>=5)E('Bugungi urinishlar tugadi');if(norm(b.a)===norm(g.p.a)){t.ok=1;pay(u,25,'Kun jumboqi');return{r:'ok'}}t.att++;return{r:'bad'}},
  rcreate:(u,b)=>{if(db.r[u.room])E('Avval joriy xonadan chiqing');const size=Math.min(6,Math.max(2,+b.size||2));let c;do c=Math.random().toString(36).slice(2,7).toUpperCase();while(db.r[c]);
   db.r[c]={code:c,name:String(b.name||'Jamoa').trim().slice(0,24)||'Jamoa',size,owner:u.id,mem:[{id:u.id,name:u.name,ready:false}],started:0};u.room=c;return db.r[c]},
  rjoin:(u,b)=>{const r=db.r[String(b.code||'').trim().toUpperCase()];if(!r)E('Xona topilmadi');if(r.mem.some(m=>m.id===u.id)){u.room=r.code;return r}
@@ -161,12 +194,14 @@ const H={
  rready:(u,b)=>{const r=H.room(u,b);if(r.started)return r;const m=r.mem.find(m=>m.id===u.id);m.ready=!m.ready;return r},
  rstart:async(u,b)=>{const r=H.room(u,b);if(r.owner!==u.id)E('Faqat xona egasi boshlay oladi');if(r.started)return r;
   if(r.mem.length<r.size)E('Xona hali to\'lmagan');if(r.mem.some(m=>!m.ready))E('Hamma tayyor emas');
-  const o=db.u[r.owner];let ch=Math.min(o.max,8);if(ch>=7&&!prem(o))ch=6;r.started=1;
+  const o=db.u[r.owner];let ch=Math.min(o.max,10);if(ch>=9&&!prem(o))ch=8;r.started=1;
   const s=db.s['r'+r.code]=mk(r.mem.map(m=>m.id),ch,o.ev,r.size);await chap(s);return r},
  rleave:(u,b)=>{const r=db.r[String(b.code).toUpperCase()];u.room=null;if(!r)return{ok:1};
   r.mem=r.mem.filter(m=>m.id!==u.id);
+  if(r.started){const s=db.s['r'+r.code];if(s){s.m=s.m.filter(x=>x!==u.id);s.n=Math.max(1,s.m.length);if(!s.m.length)delete db.s['r'+r.code];else{(s.chat=s.chat||[]).push({id:0,n:'⚙️',t:`${nn(u)} jamoani tark etdi`,p:'',nc:''});(s.log=s.log||[]).push(`${nn(u)} tark etdi`);s.v++}}
+   if(r.owner===u.id&&r.mem.length)r.owner=r.mem[0].id}
   if(!r.mem.length||(!r.started&&r.owner===u.id)){r.mem.forEach(m=>{if(db.u[m.id])db.u[m.id].room=null});delete db.r[r.code];delete db.s['r'+r.code]}
-  return{ok:1}}
+ return{ok:1}}
 };
 // ---------- Telegram tekshiruvi ----------
 function auth(h){const p=new URLSearchParams(h||'');const hash=p.get('hash');if(!hash)return null;p.delete('hash');
@@ -182,9 +217,9 @@ const server=http.createServer(async(q,res)=>{
 const menu={inline_keyboard:[[{text:"🎮 O'yinni ochish",web_app:{url:WU}}],[{text:"📖 O'yin haqida",callback_data:'about'},{text:'💎 Premium',callback_data:'prem'}],[{text:'👑 Admin',callback_data:'adm'}]]};
 const back={inline_keyboard:[[{text:'⬅️ Orqaga',callback_data:'home'}]]};
 const HOME="🌀 <b>LOOPBREAK</b>\n\nJamoaviy detektiv-sarguzasht. 8 bob, har biri oldingisidan qiyinroq. Boshlash uchun pastdagi tugmani bosing.";
-const ABOUT="📖 <b>LOOPBREAK haqida</b>\n\nBu oddiy savol-javob emas, haqiqiy sarguzasht: shifrlar, yolg'onchi guvohlar, vaqt jumboqlari, xiyonat va yashirin dalillar.\n\n🧩 <b>8 bob</b>: Qoldiq izlar → Yopiq kutubxona → Ikki guvoh → Soxta alibi → Soat sinovi → Xiyonat soyasi → Laboratoriya → Maxfiy yakun. Har bob yangi mexanika va yangi jumboqlar bilan, oldingisidan qiyin.\n👥 <b>Jamoa</b>: 2–6 kishi. Har bir o'yinchi faqat o'z ma'lumotini ko'radi, yechim uchun hammasini birlashtirish kerak.\n⚡ <b>Energiya, vaqt, dalillar</b>: xato energiyani kamaytiradi, vaqtida yakunlangan bob dalil beradi. Keyingi boblarda aynan shu dalillar kerak bo'ladi.\n🎭 <b>Qarorlar</b>: yordam berish yoki dalilni yashirish keyingi voqealarni va yakunni o'zgartiradi: yaxshi, yashirin va haqiqiy yakun.\n🤖 <b>AI</b> sahnalarni yozadi, javoblarni esa server tekshiradi.";
-const PREM="💎 <b>Premium</b>\n\n7-bob (Laboratoriya) va Maxfiy yakun faqat Premium obunachilar uchun.\n\nNarxi: <b>250 ⭐ / 30 kun</b>";
-const invoice=id=>tg('sendInvoice',{chat_id:id,title:'LOOPBREAK Premium',description:"30 kun: 7-bob va Maxfiy yakun ochiladi",payload:'prem30',provider_token:'',currency:'XTR',prices:[{label:'Premium 30 kun',amount:250}]});
+const ABOUT="📖 <b>LOOPBREAK haqida</b>\n\nBu oddiy savol-javob emas, haqiqiy sarguzasht: shifrlar, yolg'onchi guvohlar, vaqt jumboqlari, xiyonat va yashirin dalillar.\n\n🧩 <b>8 bob</b>: Qoldiq izlar → Yopiq kutubxona → Ikki guvoh → Soxta alibi → Soat sinovi → Xiyonat soyasi → Laboratoriya → Maxfiy yakun. Har bob yangi mexanika va yangi jumboqlar bilan, oldingisidan qiyin.\n👥 <b>Jamoa</b>: 2–6 kishi. Har bir o'yinchi faqat o'z ma'lumotini ko'radi, yechim uchun hammasini birlashtirish kerak.\n⚡ <b>Energiya, vaqt, dalillar</b>: xato energiyani kamaytiradi, vaqtida yakunlangan bob dalil beradi. Keyingi boblarda aynan shu dalillar kerak bo'ladi.\n🎭 <b>Qarorlar</b>: yordam berish yoki dalilni yashirish keyingi voqealarni va yakunni o'zgartiradi: yaxshi, yashirin va haqiqiy yakun.\n🪙 <b>LoopCoin</b>: to'g'ri javob uchun tanga oling, do'konda toj, laqab va ramkalarga almashtiring.\n🤖 <b>AI</b> sahnalarni yozadi, javoblarni esa server tekshiradi.";
+const PREM="💎 <b>Premium</b>\n\n9-bob (Soya laboratoriyasi) va 10-bob (Oxirgi qo'ng'iroq) faqat Premium obunachilar uchun.\n\nNarxi: <b>250 ⭐ / 30 kun</b>";
+const invoice=id=>tg('sendInvoice',{chat_id:id,title:'LOOPBREAK Premium',description:"30 kun: 9 va 10-boblar ochiladi",payload:'prem30',provider_token:'',currency:'XTR',prices:[{label:'Premium 30 kun',amount:250}]});
 async function upd(x){
  if(x.pre_checkout_query)return tg('answerPreCheckoutQuery',{pre_checkout_query_id:x.pre_checkout_query.id,ok:true});
  const m=x.message;
@@ -200,4 +235,4 @@ async function poll(){await tg('deleteWebhook',{});await tg('setChatMenuButton',
  for(;;){const r=await tg('getUpdates',{offset:o,timeout:30,allowed_updates:['message','callback_query','pre_checkout_query']});
   for(const x of r.result||[]){o=x.update_id+1;try{await upd(x)}catch(e){console.error(e)}}if(!r.ok)await new Promise(r=>setTimeout(r,3000))}}
 if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ'));poll()}
-module.exports={G,PL,auth,H,db};
+module.exports={G,PL,auth,H,db,U};
