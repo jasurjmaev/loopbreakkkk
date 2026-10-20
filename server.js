@@ -79,19 +79,53 @@ G.vig=(r,d,ev,prev)=>{const es=Object.entries(ev).filter(([,v])=>v.w.length>=3);
  return{c:[`Shifrlangan yozuv: ${t}`,`Kalit so'z: ${src?src+' (eslang yoki dalillarni tekshiring)':key}`,"Qoida: har harf kalit so'zning mos harfi qadar oldinga surilgan (A=1, B=2, C=3...). Kalit so'z harflari takrorlanib boradi."],q:"Yashirin so'z qanday?",a:w,h:`So'z "${w[0]}" harfi bilan boshlanadi`}};
 G.bin=(r,d)=>{const w=pick(r,W.filter(x=>x.length<=5+d)),c=[...w].map(ch=>(ch.charCodeAt(0)-64).toString(2).padStart(5,'0').replace(/1/g,'●').replace(/0/g,'○'));
  return{c:[`Chiroqlar (● yonib turibdi, ○ o'chiq): ${c.join('  ')}`,"Har bir beshlik — ikkilik (binar) son. Son alifbodagi o'rin: A=1, B=2, C=3 ..."],q:"Yashirin so'z?",a:w,h:`So'z "${w[0]}" harfi bilan boshlanadi`}};
-const PL={1:['bin','cipher','seq','lock'],2:['cipher','order','dial','lock','timeline'],3:['liar','mind','timeline','order','seq','lock'],4:['liar','vig','mind','dial','timeline','order','lock'],5:['mind','liar','dial','vig','timeline','order','seq','lock'],6:['liar','mind','vig','dial','order','timeline','lock','mind','evid'],7:['liar','order','mind','vig','dial','evid','timeline','lock','mind','evid'],8:['evid','mind','liar','vig','dial','evall']};
-const TT=['','Qoldiq izlar','Yopiq kutubxona','Ikki guvoh','Soxta alibi','Soat sinovi','Xiyonat soyasi','Laboratoriya','Maxfiy yakun'];
-const S=['',"Tun. Siz tashlandiq xarobaga yetib keldingiz, devorlarda yangi izlar bor.","Yopiq kutubxona. Changli javonlar orasida kimdir shoshilib nimadir yashirgan.","Ikki guvoh bir-biriga zid gapiryapti. Kim haqiqatni aytyapti?","Alibi soxta, vaqt esa tobora tugab bormoqda.","Barcha tizimlar bir vaqtda ishga tushdi. Har daqiqa muhim.","Jamoa ichida kimdir sirni sotgan. Dalillar bir-biriga zid.","Laboratoriyaning yopiq qismi. Oldingi boblardagi dalillar endi kerak bo'ladi.","Maxfiy yakun. Hamma dalil va qarorlar hal qiladi."];
-const KD={mind:'Qulf paneli: oldingi urinishlar izlari qolgan.',order:'Kirish jurnali: kim qachon kirgani.',dial:'Mexanik disklar.',vig:'Kalitli shifr.',bin:'Binar chiroqlar.',cipher:'Shifrlangan yozuv.',seq:'Eshik paneli.',lock:'Raqamli qulf.',liar:"So'roq: guvohlardan biri yolg'on gapiryapti.",timeline:'Kuzatuv jurnali.',evid:'Dalillar arxivi.',evall:'Yakuniy mexanizm.'};
+const MC={A:'.-',B:'-...',C:'-.-.',D:'-..',E:'.',F:'..-.',G:'--.',H:'....',I:'..',J:'.---',K:'-.-',L:'.-..',M:'--',N:'-.',O:'---',P:'.--.',Q:'--.-',R:'.-.',S:'...',T:'-',U:'..-',V:'...-',W:'.--',X:'-..-',Y:'-.--',Z:'--..'};
+G.morse=(r,d)=>{const w=pick(r,W.filter(x=>x.length<=4+d)),rv=d>=4,t=[...w].map(c=>MC[c]);if(rv)t.reverse();
+ return{c:[`Signal: ${t.join(' / ')}`,'Morze jadvali: '+Object.entries(MC).map(([k,v])=>k+' '+v).join(', '),...(rv?["Signal oxiridan boshlab yozilgan (oxirgi harf birinchi keladi)."]:[])],q:"Yashirin so'z?",a:w,h:`So'z "${w[0]}" harfi bilan boshlanadi`}};
+const BW=['qalam','daryo','soya','kitob','tosh','mashal','kalit','xarita','yulduz','shamol','temir','oyna','tuman','eshik','zanjir','qum','toj','archa','laylak','bozor','kamar','lampa','xanjar','savat'];
+G.book=(r,d)=>{for(let t=0;t<200;t++){const w=pick(r,W.filter(x=>x.length<=4+d)),ws=[...BW].sort(()=>r()-.5).slice(0,8+d),co=[];let ok=1;
+ for(const ch of w){const c=[];ws.forEach((x,i)=>[...x].forEach((y,p)=>{if(y.toUpperCase()===ch)c.push([i,p])}));if(!c.length){ok=0;break}co.push(pick(r,c))}
+ if(ok)return{c:[`Kitob sahifasidagi so'zlar: ${ws.map((x,i)=>`${i+1}) ${x}`).join('  ')}`,`Koordinatalar (so'z raqami, harf o'rni): ${co.map(([i,p])=>`(${i+1}, ${p+1})`).join(' ')}`,"Har koordinata bitta harfni beradi. Harflar ketma-ket yashirin so'zni hosil qiladi."],q:"Yashirin so'z?",a:w,h:`So'z "${w[0]}" harfi bilan boshlanadi`}}
+ return G.morse(r,d)};
+G.maze=(r,d)=>{const n=Math.min(5+(d>>1),8);for(let t=0;t<900;t++){const g=Array.from({length:n},()=>Array.from({length:n},()=>r()<.32?1:0));g[0][0]=0;g[n-1][n-1]=0;
+ const D=Array.from({length:n},()=>Array(n).fill(-1));D[0][0]=0;const q=[[0,0]];
+ while(q.length){const[y,x]=q.shift();for(const[a,b]of[[1,0],[-1,0],[0,1],[0,-1]]){const Y=y+a,X=x+b;if(Y>=0&&X>=0&&Y<n&&X<n&&!g[Y][X]&&D[Y][X]<0){D[Y][X]=D[y][x]+1;q.push([Y,X])}}}
+ const L=D[n-1][n-1];
+ if(L>0&&(L>=2*n-2+2*(d>>1)||t>800))return{c:["Labirint xaritasi:\n"+g.map((row,y)=>row.map((v,x)=>y==0&&x==0?'🟩':y==n-1&&x==n-1?'🟥':v?'⬛':'⬜').join('')).join('\n'),"🟩 — boshlanish, 🟥 — chiqish, ⬛ — devor. Faqat yuqori, past, chap, o'ng tomonga yuriladi (diagonal emas)."],q:"Yashil katakdan qizil katakkacha eng qisqa yo'l necha qadam?",a:String(L),h:`Yo'l ${L>10?"10 qadamdan ko'p":"10 qadamdan oshmaydi"}`}}
+ return G.morse(r,d)};
+G.roles=(r,d)=>{const n=Math.min(3+(d>>1),7),nm=NM.slice(0,n);
+ for(let k=0;k<3000;k++){const T=nm.map(()=>r()<.5),a=ri(r,0,n-1),S=nm.map((_,i)=>{if(i===a)return{i,t:2,j:0};let j=ri(r,0,n-2);if(j>=i)j++;return{i,j,t:T[j]===T[i]?0:1}});let cnt=0;
+  for(let m=0;m<1<<n;m++){const H=nm.map((_,i)=>!!(m>>i&1));if(S.every(s=>H[s.i]===(s.t===2?T[a]:s.t===0?H[s.j]:!H[s.j])))cnt++}
+  if(cnt===1)return{c:["Ma'lum: kecha yong'in CHIQQAN edi.","Rostgo'y doim rost, yolg'onchi doim yolg'on gapiradi.",...S.map(s=>s.t===2?`${nm[s.i]}: "Kecha yong'in ${T[a]?'chiqqan':'chiqmagan'} edi."`:`${nm[s.i]}: "${nm[s.j]} — ${s.t?"yolg'onchi":"rostgo'y"}."`)],q:`Hammaning rolini ismlar tartibida yozing: R (rostgo'y) yoki Y (yolg'onchi), masalan ${'RYRYRYR'.slice(0,n)}. Tartib: ${nm.join(', ')}`,a:T.map(x=>x?'R':'Y').join(''),h:`${nm[0]} — ${T[0]?"rostgo'y":"yolg'onchi"}`}}
+ return G.liar(r,d)};
+G.eq=(r,d)=>{const m=d>=5?4:3,nm=NM.slice(0,m),v=nm.map(()=>ri(r,6,60)),df=(a,b)=>{const x=v[a]-v[b];return x?`${nm[a]} ${nm[b]} dan ${Math.abs(x)} yosh ${x>0?'katta':'kichik'}`:`${nm[a]} va ${nm[b]} tengdosh`};
+ const c=[df(0,1)+'.',`${nm[1]} va ${nm[2]} yoshlari yig'indisi ${v[1]+v[2]}.`];if(m===4)c.push(`${nm[2]} va ${nm[3]} yoshlari yig'indisi ${v[2]+v[3]}.`);c.push(`Hammasining yoshlari yig'indisi ${v.reduce((x,y)=>x+y)}.`);
+ return{c,q:`${nm[0]} va ${nm[m-1]} yoshlari yig'indisi nechchi?`,a:String(v[0]+v[m-1]),h:`${nm[1]} ${v[1]} yoshda emas, ${v[1]%2?'toq':'juft'} yoshda`}};
+G.clock=(r,d)=>{const m=ri(r,2+(d>>1),9),k=ri(r,2,12),T0=ri(r,0,1439),lag=d>=5&&r()<.5,sh=k*(60+(lag?-m:m));
+ return{c:[`Buzuq soat har haqiqiy soatda ${m} daqiqa ${lag?'ORQADA qoladi':'OLDINGA ketadi'}.`,`Soat ${fmt(T0)} da to'g'ri vaqtga qo'yilgan.`,`Hozir buzuq soat ${fmt(T0+sh)} ni ko'rsatmoqda.`],q:"Haqiqiy vaqt hozir nechada? (SS:DD)",a:fmt(T0+k*60),h:`Haqiqatda ${k} soat o'tgan`}};
+const gcd=(a,b)=>b?gcd(b,a%b):a;
+G.lcm=(r,d)=>{const n=d>=5?3:2,P=[4,6,8,9,10,12,14,15].sort(()=>r()-.5).slice(0,n),T0=ri(r,1200,1380),k=d>=3?ri(r,2,3):1,L=P.reduce((a,b)=>a*b/gcd(a,b));
+ return{c:[...P.map((p,i)=>`${i+1}-soqchi har ${p} daqiqada o'tadi.`),`Hammasi ${fmt(T0)} da birga o'tdi.`],q:`Hammasi ${k}-marta (shu vaqtdan keyin) qachon birga o'tadi? (SS:DD, yarim tundan keyin 00:00 dan sanaladi)`,a:fmt(T0+k*L),h:`Oraliq ${L} daqiqa`}};
+const sdc=(g,lim=2)=>{const i=g.indexOf(0);if(i<0)return 1;let c=0;const y=i>>2,x=i&3;for(let v=1;v<=4&&c<lim;v++){let ok=true;for(let k=0;k<4;k++)if(g[y*4+k]===v||g[k*4+x]===v)ok=false;const by=y&2,bx=x&2;for(let a=0;a<2;a++)for(let b=0;b<2;b++)if(g[(by+a)*4+bx+b]===v)ok=false;if(ok){g[i]=v;c+=sdc(g,lim-c);g[i]=0}}return c};
+G.sudo=(r,d)=>{const pm=[1,2,3,4].sort(()=>r()-.5);let g=[1,2,3,4,3,4,1,2,2,1,4,3,4,3,2,1].map(v=>pm[v-1]);
+ const rw=[...[0,1].sort(()=>r()-.5),...[2,3].sort(()=>r()-.5)],cl=[...[0,1].sort(()=>r()-.5),...[2,3].sort(()=>r()-.5)];
+ const o=g;g=o.map((_,i)=>o[rw[i>>2]*4+cl[i&3]]);const SOL=[...g],keep=d>=5?4:8;
+ for(const i of [...Array(16).keys()].sort(()=>r()-.5)){if(g.filter(x=>x).length<=keep)break;const v=g[i];g[i]=0;if(sdc([...g])!==1)g[i]=v}
+ const DG=['⬜','1️⃣','2️⃣','3️⃣','4️⃣'],q=ri(r,0,3);
+ return{c:["Seyf paneli (4×4):\n"+[0,1,2,3].map(y=>g.slice(y*4,y*4+4).map(v=>DG[v]).join('')).join('\n'),"Qoida: har qator, har ustun va har 2×2 qism (to'rt burchak) 1,2,3,4 raqamlarini bir martadan o'z ichiga olsin. ⬜ — bo'sh katak."],q:`Panel to'ldirilgach ${q+1}-qator raqamlari (probelsiz, chapdan o'ngga)?`,a:SOL.slice(q*4,q*4+4).join(''),h:`Qatorning birinchi raqami ${SOL[q*4]}`}};
+const PL={1:['bin','cipher','seq','lock'],2:['morse','book','maze','morse','book','maze'],3:['liar','roles','order','liar','roles','order'],4:['mind','dial','eq','mind','dial','eq','mind'],5:['timeline','clock','lcm','timeline','clock','lcm','timeline','lcm'],6:['vig','evid','sudo','vig','sudo','evid','sudo','vig','evid'],7:['roles','mind','vig','sudo','dial','lcm','evid','maze','order','evid'],8:['evid','sudo','mind','vig','dial','evall']};
+const TT=['','Qoldiq izlar','Yopiq kutubxona','Ikki guvoh','Yopiq seyf','Soat sinovi','Xiyonat soyasi','Laboratoriya','Maxfiy yakun'];
+const S=['',"Tun. Siz tashlandiq xarobaga yetib keldingiz, devorlarda yangi izlar bor.","Yopiq kutubxona. Changli javonlar orasida kimdir shoshilib nimadir yashirgan.","Ikki guvoh bir-biriga zid gapiryapti. Kim haqiqatni aytyapti?","Yopiq seyf xonasi: raqamlar, disklar va yoshlar sirini ochish kerak.","Barcha tizimlar bir vaqtda ishga tushdi. Har daqiqa muhim.","Jamoa ichida kimdir sirni sotgan. Dalillar bir-biriga zid.","Laboratoriyaning yopiq qismi. Oldingi boblardagi dalillar endi kerak bo'ladi.","Maxfiy yakun. Hamma dalil va qarorlar hal qiladi."];
+const KD={morse:'Morze signallari.',book:'Kitob shifri.',maze:'Labirint xaritasi.',roles:'Guvohlar: kim rostgo\'y, kim yolg\'onchi?',eq:'Yoshlar jumbog\'i.',clock:'Buzuq soat.',lcm:'Soqchilar navbati.',sudo:'Seyf paneli.',mind:'Qulf paneli: oldingi urinishlar izlari qolgan.',order:'Kirish jurnali: kim qachon kirgani.',dial:'Mexanik disklar.',vig:'Kalitli shifr.',bin:'Binar chiroqlar.',cipher:'Shifrlangan yozuv.',seq:'Eshik paneli.',lock:'Raqamli qulf.',liar:"So'roq: guvohlardan biri yolg'on gapiryapti.",timeline:'Kuzatuv jurnali.',evid:'Dalillar arxivi.',evall:'Yakuniy mexanizm.'};
 // ---------- AI (ixtiyoriy): faqat sahna matnini yozadi, javoblarni server tekshiradi ----------
-async function ai(p){if(!AK)return'';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AK,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.AI_MODEL||'claude-haiku-5-5',max_tokens:220,messages:[{role:'user',content:p}]}),signal:AbortSignal.timeout(8000)});const j=await r.json();return(j.content?.[0]?.text||'').trim()}catch{return''}}
+async function ai(p){if(!AK)return'';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AK,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.AI_MODEL||'claude-haiku-5-5',max_tokens:220,messages:[{role:'user',content:p}]}),signal:AbortSignal.timeout(8000)});const j=await r.json();const t=(j.content?.[0]?.text||'').trim();if(!t)console.log('AI xato:',JSON.stringify(j.error||j).slice(0,200));return t}catch(e){console.log('AI xato:',e.message);return''}}
 // ---------- O'yin mantiqi ----------
 const prem=u=>u.prem>Date.now(),ow=s=>db.u[s.m[0]];
 const mk=(m,ch,ev,n)=>({m,n,ch,step:0,seed:Math.random()*1e9|0,en:100,ev:Object.fromEntries(Object.entries(ev).filter(([k])=>+k<ch)),fl:{ally:0,hid:0},st:'puz',v:1,fh:0,msg:'',chat:[]});
-async function enter(s){const kind=PL[s.ch][s.step],d=Math.min(s.ch+(s.step>>2),9),p=G[kind](rng(s.seed+s.ch*97+s.step*13),d,s.ev,s.prev);s.att=0;
+async function enter(s){const kind=PL[s.ch][s.step],d=Math.min(s.ch+(s.step>>1),9),p=G[kind](rng(s.seed+s.ch*97+s.step*13),d,s.ev,s.prev);s.att=0;
  const base=`${S[s.ch]} ${KD[kind]}`;
  const t=await ai(`Detektiv o'yin muallifi sifatida o'zbek tilida 2 gapdan iborat qisqa sahna yoz. Bob: "${TT[s.ch]}". Vaziyat: ${KD[kind]} Ittifoqchilar: ${s.fl.ally}, yashirilgan dalillar: ${s.fl.hid}. Faqat atmosfera: hech qanday raqam, javob yoki yechim yozma.`);
- s.cur={c:p.c,q:p.q,a:p.a,h:p.h,story:t||base,hinted:0};s.st='puz';s.v++}
+ s.cur={c:p.c,q:p.q,a:p.a,h:p.h,story:t||base,ai:!!t,hinted:0};s.st='puz';s.v++}
 async function chap(s){s.step=0;s.dl=Date.now()+(15+PL[s.ch].length*6)*6e4;s.fh=Math.min(s.fl.ally,2);s.en=Math.max(s.en,40);await enter(s)}
 async function hurt(s){if(s.en<=0){s.en=60;s.seed=Math.random()*1e9|0;s.msg="💀 Energiya tugadi. Bob yangi jumboqlar bilan qayta boshlandi.";await chap(s)}}
 function fin(s){const ok=Date.now()<=s.dl,r=rng(s.seed+s.ch);if(ok)s.ev[s.ch]={n:ri(r,10,99),w:pick(r,W)};
@@ -99,7 +133,7 @@ function fin(s){const ok=Date.now()<=s.dl,r=rng(s.seed+s.ch);if(ok)s.ev[s.ch]={n
  s.msg=ok?"🗝 Bob yakunlandi, yangi dalil topildi!":"⏳ Vaqt o'tib ketdi — dalil yo'qoldi.";s.st='choice'}
 function endg(s){s.st='end';s.end=s.ch>=8?(s.fl.ally>=3?'true':'secret'):'good';for(const id of s.m){const u=db.u[id];if(u&&!u.end.includes(s.end))u.end.push(s.end)}s.v++}
 async function nxt(s){if(s.ch>=8||(s.ch===7&&Object.keys(s.ev).length<7))return endg(s);s.ch++;if(s.ch>=7&&!prem(ow(s))){s.st='lock';s.v++;return}await chap(s)}
-const view=(s,uid)=>{const i=Math.max(0,s.m.indexOf(uid)),c=s.cur||{};return{k:s.st,ch:s.ch,t:TT[s.ch],step:s.step+1,tot:(PL[s.ch]||[]).length,story:c.story,clues:(c.c||[]).filter((_,j)=>j%s.n===i),role:s.n>1?`${i+1}/${s.n}`:'',n:s.n,q:c.q,en:s.en,ev:s.ev,hint:c.hinted?c.h:'',fh:s.fh,dl:s.dl,v:s.v,msg:s.msg,fl:s.fl,end:s.end,chat:(s.chat||[]).slice(-40)}};
+const view=(s,uid)=>{const i=Math.max(0,s.m.indexOf(uid)),c=s.cur||{};return{k:s.st,ch:s.ch,t:TT[s.ch],step:s.step+1,tot:(PL[s.ch]||[]).length,story:c.story,clues:(c.c||[]).filter((_,j)=>j%s.n===i),role:s.n>1?`${i+1}/${s.n}`:'',n:s.n,q:c.q,en:s.en,ev:s.ev,hint:c.hinted?c.h:'',fh:s.fh,dl:s.dl,v:s.v,msg:s.msg,fl:s.fl,end:s.end,ai:c.ai?1:0,chat:(s.chat||[]).slice(-40)}};
 const ses=(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))throw new Error("O'yin topilmadi");return s};
 const U=x=>{const u=db.u[x.id]||={id:x.id,max:1,done:[],ev:{},end:[],prem:0,room:null};u.name=(x.first_name||"O'yinchi").slice(0,20);return u};
 const E=m=>{throw new Error(m)};
@@ -165,5 +199,5 @@ async function upd(x){
 async function poll(){await tg('deleteWebhook',{});await tg('setChatMenuButton',{menu_button:{type:'web_app',text:"O'ynash",web_app:{url:WU}}});let o=0;
  for(;;){const r=await tg('getUpdates',{offset:o,timeout:30,allowed_updates:['message','callback_query','pre_checkout_query']});
   for(const x of r.result||[]){o=x.update_id+1;try{await upd(x)}catch(e){console.error(e)}}if(!r.ok)await new Promise(r=>setTimeout(r,3000))}}
-if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT));poll()}
+if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ'));poll()}
 module.exports={G,PL,auth,H,db};
