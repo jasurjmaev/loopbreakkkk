@@ -3,11 +3,11 @@ const http=require('http'),fs=require('fs'),crypto=require('crypto'),path=requir
 const {BOT_TOKEN:T,WEBAPP_URL:WU,ANTHROPIC_API_KEY:AK,PORT=3000}=process.env,ADMIN=process.env.ADMIN||'@wxs_z',AID=String(process.env.ADMIN_ID||'').trim(),isAdm=id=>!!AID&&String(id)===AID;
 const DBF=process.env.DB_FILE||'db.json';
 let db={u:{},s:{},r:{}};try{db=JSON.parse(fs.readFileSync(DBF))}catch{}
-db.cfg=Object.assign({maint:'',coinMul:1,timeMul:1,daily:25,prices:{},lr:''},db.cfg||{});for(const k of['st','cs','ks'])db[k]=db[k]||{};db.co=db.co||{e:0,s:0};for(const k of['err','alog','pay'])db[k]=db[k]||[];db.pa=db.pa||0;db.hf=db.hf||{};db.dm=db.dm||{};db.bc=db.bc||null;
-let tm;const save=()=>{clearTimeout(tm);tm=setTimeout(()=>fs.writeFile(DBF,JSON.stringify(db),()=>{}),400)};
+const initDb=()=>{db.u=db.u||{};db.s=db.s||{};db.r=db.r||{};db.cfg=Object.assign({maint:'',coinMul:1,timeMul:1,daily:25,prices:{},lr:''},db.cfg||{});for(const k of['st','cs','ks'])db[k]=db[k]||{};db.co=db.co||{e:0,s:0};for(const k of['err','alog','pay'])db[k]=db[k]||[];db.pa=db.pa||0;db.hf=db.hf||{};db.dm=db.dm||{};db.bc=db.bc||null};initDb();
+let tm,dirty=0,lastBk=0;const save=()=>{dirty=1;clearTimeout(tm);tm=setTimeout(()=>fs.writeFile(DBF,JSON.stringify(db),()=>{}),400)};
 const dk=t=>new Date(t).toISOString().slice(0,10),elog=(k,m)=>{db.err.unshift({t:Date.now(),k,m:String(m).slice(0,220)});if(db.err.length>100)db.err.length=100},alog=a=>{db.alog.unshift({t:Date.now(),a});if(db.alog.length>200)db.alog.length=200};
 process.on('uncaughtException',e=>elog('crash',e.stack||e.message));process.on('unhandledRejection',e=>elog('crash',e&&e.message||e));
-process.on('SIGTERM',()=>{try{fs.writeFileSync(DBF,JSON.stringify(db))}catch{}process.exit(0)});
+process.on('SIGTERM',async()=>{try{fs.writeFileSync(DBF,JSON.stringify(db))}catch{}try{if(dirty)await Promise.race([sendBackup(),new Promise(r=>setTimeout(r,8000))])}catch{}process.exit(0)});
 const tg=(m,b)=>fetch(`https://api.telegram.org/bot${T}/${m}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>({}));
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1)),pick=(r,a)=>a[Math.floor(r()*a.length)];
@@ -196,14 +196,18 @@ const dash=()=>{const L=Object.values(db.u),now=Date.now(),day=n=>dk(now-n*864e5
  return{total:L.length,dau:cnt(1),wau:cnt(7),mau:cnt(30),act:L.filter(u=>now-(u.last||0)<3e5).length,sg:ss.filter(s=>s.n===1).length,tg:ss.filter(s=>s.n>1).length,nw1:nw(1),nw7:nw(7),nw30:nw(30),series,F,
   ch:Object.entries(db.cs).map(([n,x])=>({n:+n,...x})).sort((a,b)=>a.n-b.n),ks:Object.entries(db.ks).map(([k,x])=>({k,...x})).sort((a,b)=>(b.ok+b.bad)-(a.ok+a.bad)),src:Object.values(SR).sort((a,b)=>b.n-a.n).slice(0,10),
   coins:{circ:L.reduce((a,u)=>a+u.coins,0),e:db.co.e,s:db.co.s,top},pay:{n:db.pay.length,stars:db.pay.reduce((a,p)=>a+p.a,0),prem:L.filter(u=>u.prem>now).length,fail:Math.max(0,db.pa-db.pay.length)},
-  tech:{up:Math.floor(process.uptime()),mem:Math.round(process.memoryUsage().rss/1048576),db:JSON.stringify(db).length,maint:db.cfg.maint,bc:db.bc},cfg:db.cfg,err:db.err.slice(0,30),alog:db.alog.slice(0,40),shop:IT.map(i=>({id:i.id,n:i.n,p:db.cfg.prices[i.id]||i.p}))}};
+  tech:{bk:db.cfg.bkt||0,up:Math.floor(process.uptime()),mem:Math.round(process.memoryUsage().rss/1048576),db:JSON.stringify(db).length,maint:db.cfg.maint,bc:db.bc},cfg:db.cfg,err:db.err.slice(0,30),alog:db.alog.slice(0,40),shop:IT.map(i=>({id:i.id,n:i.n,p:db.cfg.prices[i.id]||i.p}))}};
 const report=()=>{const d=dash(),t=d.series[13],e24=db.err.filter(e=>Date.now()-e.t<864e5).length,w=d.ch.filter(c=>c.st>=5).map(c=>({n:c.n,r:c.dn/c.st})).sort((a,b)=>a.r-b.r)[0];
  return`📊 <b>LOOPBREAK — kunlik hisobot</b>\n\nYangi foydalanuvchilar: <b>+${d.nw1}</b>\nFaol (bugun): <b>${d.dau}</b>\nBoshlangan / tugatilgan o'yinlar: <b>${t.gs} / ${t.ge}</b>\nJami foydalanuvchilar: <b>${d.total}</b>\nXatolar (24 soat): <b>${e24}</b>\n\n💡 `+(w&&w.r<.5?`Tavsiya: ${w.n}-bobni yakunlash ko'rsatkichi ${Math.round(w.r*100)}%. Shu bobning qiyinligi va ishlashini tekshiring.`:"Tavsiya uchun hali yetarli ma'lumot yo'q (kamida 5 ta boshlangan bob kerak).")};
-async function sendBackup(){if(!AID)return false;try{const f=new FormData();f.append('chat_id',AID);f.append('caption','💾 LOOPBREAK zaxira '+dk(Date.now()));f.append('document',new Blob([JSON.stringify(db)],{type:'application/json'}),`loopbreak-${dk(Date.now())}.json`);const r=await fetch(`https://api.telegram.org/bot${T}/sendDocument`,{method:'POST',body:f}).then(r=>r.json());return!!r.ok}catch(e){elog('backup',e.message);return false}}
+async function sendBackup(){if(!AID)return false;try{const f=new FormData();f.append('chat_id',AID);f.append('disable_notification','true');f.append('caption','💾 LOOPBREAK zaxira: '+new Date().toISOString().slice(0,16).replace('T',' ')+' UTC. O\'chirmang: server qayta ishga tushsa baza shu yerdan tiklanadi.');f.append('document',new Blob([JSON.stringify(db)],{type:'application/json'}),'loopbreak-backup.json');
+ const r=await fetch(`https://api.telegram.org/bot${T}/sendDocument`,{method:'POST',body:f}).then(r=>r.json());if(!r.ok){elog('backup',r.description||'sendDocument xato');return false}
+ const id=r.result.message_id;await tg('pinChatMessage',{chat_id:AID,message_id:id,disable_notification:true});const old=db.cfg.bkm;if(old&&old!==id)await tg('deleteMessage',{chat_id:AID,message_id:old});db.cfg.bkm=id;db.cfg.bkt=Date.now();dirty=0;lastBk=Date.now();return true}catch(e){elog('backup',e.message);return false}}
+async function restore(){if(!AID)return false;try{const c=await tg('getChat',{chat_id:AID}),d=c.result&&c.result.pinned_message&&c.result.pinned_message.document;if(!d)return false;
+ const f=await tg('getFile',{file_id:d.file_id});if(!f.ok)return false;const j=await fetch(`https://api.telegram.org/file/bot${T}/${f.result.file_path}`).then(r=>r.json());if(!j||typeof j.u!=='object')return false;db=j;return true}catch(e){console.log('Tiklash xato:',e.message);return false}}
 function jobs(){if(!AID)return;if(Date.now()-(db.cfg.ls||0)>36e5){db.cfg.ls=Date.now();tg('sendMessage',{chat_id:AID,text:'🟢 LOOPBREAK ishga tushdi'})}let la=0;
  setInterval(()=>{const n=db.err.filter(e=>Date.now()-e.t<6e5).length;if(n>=10&&Date.now()-la>36e5){la=Date.now();tg('sendMessage',{chat_id:AID,text:`⚠️ Oxirgi 10 daqiqada ${n} ta xato. Mini App → Admin → Jurnal bo'limini tekshiring.`})}},6e4);
  setInterval(()=>{const k=dk(Date.now());if(new Date().getUTCHours()===4&&db.cfg.lr!==k){db.cfg.lr=k;save();tg('sendMessage',{chat_id:AID,text:report(),parse_mode:'HTML'})}},6e5);
- setInterval(sendBackup,432e5)}
+ setInterval(()=>{if(dirty&&Date.now()-lastBk>18e5)sendBackup()},3e5);setInterval(()=>fetch(WU+'/health').catch(()=>{}),6e5)}
 const fix=x=>{const D=DEF();for(const k in D)if(!(k in x))x[k]=D[k];return x},gx=id=>db.u[id]?fix(db.u[id]):null;
 const onl=x=>!x.hide&&Date.now()-(x.last||0)<3e5,dmk=(a,b)=>a<b?a+'_'+b:b+'_'+a;
 const ntf=(id,text)=>{const t=db.u[id];if(!t||!t.bs)return;tg('sendMessage',{chat_id:id,text,reply_markup:{inline_keyboard:[[{text:"🎮 LOOPBREAK ni ochish",web_app:{url:WU}}]]}})};
@@ -320,7 +324,7 @@ const send=(res,c,j)=>{res.writeHead(c,{'Content-Type':'application/json'});res.
 const server=http.createServer(async(q,res)=>{
  if(q.method==='POST'&&q.url.startsWith('/api/')){let b='';for await(const c of q)b+=c;
   try{const x=auth(q.headers['x-init']);if(!x)E("Telegram tasdiqlashi noto'g'ri. O'yinni bot orqali oching.");const k=q.url.slice(5),u=U(x),h=H[k];if(!h||(k.startsWith('a_')&&!isAdm(x.id)))E('?');if(!isAdm(x.id)){if(db.cfg.maint)E('🔧 Texnik ishlar: '+db.cfg.maint);if(u.ban)E('Hisobingiz cheklangan')}const j=await h(u,JSON.parse(b||'{}'));save();send(res,200,j)}catch(e){if(!e.u)elog('api',`${q.url}: ${e.message}`);send(res,400,{e:e.message})}}
- else{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(fs.readFileSync(path.join(__dirname,'index.html')))}});
+ else if(q.url==='/health'){res.writeHead(200);res.end('ok')}else{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(fs.readFileSync(path.join(__dirname,'index.html')))}});
 // ---------- Bot ----------
 const menu={inline_keyboard:[[{text:"🎮 O'yinni ochish",web_app:{url:WU}}],[{text:"📖 O'yin haqida",callback_data:'about'},{text:'💎 Premium',callback_data:'prem'}],[{text:'👑 Admin',callback_data:'adm'}]]};
 const back={inline_keyboard:[[{text:'⬅️ Orqaga',callback_data:'home'}]]};
@@ -342,5 +346,5 @@ async function upd(x){
 async function poll(){await tg('deleteWebhook',{});await tg('setChatMenuButton',{menu_button:{type:'web_app',text:"O'ynash",web_app:{url:WU}}});let o=0;
  for(;;){const r=await tg('getUpdates',{offset:o,timeout:30,allowed_updates:['message','callback_query','pre_checkout_query']});
   for(const x of r.result||[]){o=x.update_id+1;try{await upd(x)}catch(e){console.error(e);elog('bot',e.message)}}if(!r.ok){elog('bot','getUpdates javob bermadi');await new Promise(r=>setTimeout(r,3000))}}}
-if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ','| Admin:',AID?'bor':'YOQ'));poll();jobs()}
+if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}(async()=>{if(!Object.keys(db.u).length&&await restore()){initDb();console.log('♻️ Baza Telegram zaxirasidan tiklandi:',Object.keys(db.u).length,'foydalanuvchi')}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ','| Admin:',AID?'bor':'YOQ'));poll();jobs()})()}
 module.exports={G,PL,auth,H,db,U,server};
