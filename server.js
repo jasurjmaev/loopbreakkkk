@@ -1,9 +1,13 @@
 // LOOPBREAK — bot + Mini App serveri. Faqat Node 18+, paket o'rnatish shart emas.
 const http=require('http'),fs=require('fs'),crypto=require('crypto'),path=require('path');
-const {BOT_TOKEN:T,WEBAPP_URL:WU,ANTHROPIC_API_KEY:AK,PORT=3000}=process.env,ADMIN=process.env.ADMIN||'@wxs_z';
+const {BOT_TOKEN:T,WEBAPP_URL:WU,ANTHROPIC_API_KEY:AK,PORT=3000}=process.env,ADMIN=process.env.ADMIN||'@wxs_z',AID=String(process.env.ADMIN_ID||'').trim(),isAdm=id=>!!AID&&String(id)===AID;
 const DBF=process.env.DB_FILE||'db.json';
 let db={u:{},s:{},r:{}};try{db=JSON.parse(fs.readFileSync(DBF))}catch{}
+db.cfg=Object.assign({maint:'',coinMul:1,timeMul:1,daily:25,prices:{},lr:''},db.cfg||{});for(const k of['st','cs','ks'])db[k]=db[k]||{};db.co=db.co||{e:0,s:0};for(const k of['err','alog','pay'])db[k]=db[k]||[];db.pa=db.pa||0;db.bc=db.bc||null;
 let tm;const save=()=>{clearTimeout(tm);tm=setTimeout(()=>fs.writeFile(DBF,JSON.stringify(db),()=>{}),400)};
+const dk=t=>new Date(t).toISOString().slice(0,10),elog=(k,m)=>{db.err.unshift({t:Date.now(),k,m:String(m).slice(0,220)});if(db.err.length>100)db.err.length=100},alog=a=>{db.alog.unshift({t:Date.now(),a});if(db.alog.length>200)db.alog.length=200};
+process.on('uncaughtException',e=>elog('crash',e.stack||e.message));process.on('unhandledRejection',e=>elog('crash',e&&e.message||e));
+process.on('SIGTERM',()=>{try{fs.writeFileSync(DBF,JSON.stringify(db))}catch{}process.exit(0)});
 const tg=(m,b)=>fetch(`https://api.telegram.org/bot${T}/${m}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(r=>r.json()).catch(()=>({}));
 const rng=s=>()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
 const ri=(r,a,b)=>a+Math.floor(r()*(b-a+1)),pick=(r,a)=>a[Math.floor(r()*a.length)];
@@ -124,7 +128,7 @@ const TT=['','Qoldiq izlar','Yopiq kutubxona','Ikki guvoh','Yopiq seyf','Soat si
 const S=['',"Tun. Siz tashlandiq xarobaga yetib keldingiz, devorlarda yangi izlar bor.","Yopiq kutubxona. Changli javonlar orasida kimdir shoshilib nimadir yashirgan.","Ikki guvoh bir-biriga zid gapiryapti. Kim haqiqatni aytyapti?","Yopiq seyf xonasi: raqamlar, disklar va yoshlar sirini ochish kerak.","Barcha tizimlar bir vaqtda ishga tushdi. Har daqiqa muhim.","Jamoa ichida kimdir sirni sotgan. Dalillar bir-biriga zid.","Laboratoriyaning yopiq qismi. Oldingi boblardagi dalillar endi kerak bo'ladi.","Maxfiy yakun. Hamma dalil va qarorlar hal qiladi.","Soya laboratoriyasi: eng chuqur qatlam, eng qiyin jumboqlar.","Oxirgi qo'ng'iroq. Hamma narsa shu yerda hal bo'ladi."];
 const KD={op:"JAMOAVIY OPERATSIYA: kod, kamera va gumondorlar ma'lumoti turli odamlarda. Gaplashib kelishing!",morse:'Morze signallari.',book:'Kitob shifri.',maze:'Labirint xaritasi.',roles:'Guvohlar: kim rostgo\'y, kim yolg\'onchi?',eq:'Yoshlar jumbog\'i.',clock:'Buzuq soat.',lcm:'Soqchilar navbati.',sudo:'Seyf paneli.',mind:'Qulf paneli: oldingi urinishlar izlari qolgan.',order:'Kirish jurnali: kim qachon kirgani.',dial:'Mexanik disklar.',vig:'Kalitli shifr.',bin:'Binar chiroqlar.',cipher:'Shifrlangan yozuv.',seq:'Eshik paneli.',lock:'Raqamli qulf.',liar:"So'roq: guvohlardan biri yolg'on gapiryapti.",timeline:'Kuzatuv jurnali.',evid:'Dalillar arxivi.',evall:'Yakuniy mexanizm.'};
 // ---------- AI (ixtiyoriy): faqat sahna matnini yozadi, javoblarni server tekshiradi ----------
-async function ai(p){if(!AK)return'';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AK,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.AI_MODEL||'claude-haiku-5-5',max_tokens:220,messages:[{role:'user',content:p}]}),signal:AbortSignal.timeout(8000)});const j=await r.json();const t=(j.content?.[0]?.text||'').trim();if(!t)console.log('AI xato:',JSON.stringify(j.error||j).slice(0,200));return t}catch(e){console.log('AI xato:',e.message);return''}}
+async function ai(p){if(!AK)return'';try{const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':AK,'anthropic-version':'2023-06-01','content-type':'application/json'},body:JSON.stringify({model:process.env.AI_MODEL||'claude-haiku-5-5',max_tokens:220,messages:[{role:'user',content:p}]}),signal:AbortSignal.timeout(8000)});const j=await r.json();const t=(j.content?.[0]?.text||'').trim();if(!t){console.log('AI xato:',JSON.stringify(j.error||j).slice(0,200));elog('ai',JSON.stringify(j.error||j))}return t}catch(e){console.log('AI xato:',e.message);elog('ai',e.message);return''}}
 // ---------- O'yin mantiqi ----------
 const prem=u=>u.prem>Date.now(),ow=s=>db.u[s.m[0]];
 const mk=(m,ch,ev,n)=>({m,n,ch,step:0,seed:Math.random()*1e9|0,en:100,ev:Object.fromEntries(Object.entries(ev).filter(([k])=>+k<ch)),fl:{ally:0,hid:m.some(id=>db.u[id]&&db.u[id].own&&db.u[id].own.includes('key'))?1:0},st:'puz',v:1,fh:0,msg:'',chat:[]});
@@ -133,23 +137,23 @@ async function enter(s){const kind=KS(s)[s.step],d=Math.min(s.ch+(s.step>>1),9),
  const base=`${S[s.ch]} ${KD[kind]}`;
  const t=await ai(`Detektiv o'yin muallifi sifatida o'zbek tilida 2 gapdan iborat qisqa sahna yoz. Bob: "${TT[s.ch]}". Vaziyat: ${KD[kind]} Ittifoqchilar: ${s.fl.ally}, yashirilgan dalillar: ${s.fl.hid}. Faqat atmosfera: hech qanday raqam, javob yoki yechim yozma.`);
  s.cur={c:p.c,q:p.q,a:p.a,h:p.h,story:t||base,ai:!!t,tw,hinted:0};s.st='puz';s.v++}
-async function chap(s){const a=[...PL[s.ch]],last=a.pop(),r=rng(s.seed+s.ch*31);a.sort(()=>r()-.5);(s.pl||={})[s.ch]=[...a,last];
- s.step=0;s.er=0;s.sh=0;s.dl=Date.now()+(15+a.length*6)*6e4;s.fh=Math.min(s.fl.ally,2);s.en=Math.max(s.en,40);
+async function chap(s){(db.cs[s.ch]||={st:0,dn:0,er:0}).st++;const a=[...PL[s.ch]],last=a.pop(),r=rng(s.seed+s.ch*31);a.sort(()=>r()-.5);(s.pl||={})[s.ch]=[...a,last];
+ s.step=0;s.er=0;s.sh=0;s.dl=Date.now()+(15+a.length*6)*6e4*(db.cfg.timeMul||1);s.fh=Math.min(s.fl.ally,2);s.en=Math.max(s.en,40);
  if(s.n>1){const o=[0,1,2,3,4].sort(()=>r()-.5);s.rl={};s.m.forEach((id,i)=>s.rl[id]=o[i%5])}
  s.log=s.log||[];await enter(s)}
 async function hurt(s){if(s.en<=0){s.en=60;s.seed=Math.random()*1e9|0;s.msg="💀 Energiya tugadi. Bob yangi jumboqlar bilan qayta boshlandi.";await chap(s)}}
-function fin(s){const ok=Date.now()<=s.dl,r=rng(s.seed+s.ch);if(ok)s.ev[s.ch]={n:ri(r,10,99),w:pick(r,W)};
+function fin(s){(db.cs[s.ch]||={st:0,dn:0,er:0}).dn++;const ok=Date.now()<=s.dl,r=rng(s.seed+s.ch);if(ok)s.ev[s.ch]={n:ri(r,10,99),w:pick(r,W)};
  for(const id of s.m){const u=db.u[id];if(!u)continue;u.ev={...u.ev,...s.ev};if(!u.done.includes(s.ch))u.done.push(s.ch);u.max=Math.max(u.max,Math.min(s.ch+1,10));u.cnt++;if(s.n>1)u.tw++;if(!s.er){u.clean++;u.inv.dec=(u.inv.dec||0)+1}if(ok&&!u.col.includes(COLS[s.ch]))u.col.push(COLS[s.ch]);if(s.fl.hid>0&&!s.er){pay(u,40,'🗝 Maxfiy xona');u.col.push('⭐ '+COLS[s.ch]+' (noyob)');u.secret++}if(s.ch>=7&&s.n>1)u.hardteam++;ach(u)}
  s.cl=s.m[Math.floor(Math.random()*s.m.length)];(s.log=s.log||[]).push(`${s.ch}-bob yakunlandi${ok?': dalil topildi':": dalil yo'qoldi"}`);
  s.msg=ok?"🗝 Bob yakunlandi, yangi dalil topildi!":"⏳ Vaqt o'tib ketdi — dalil yo'qoldi.";if(s.fl.hid>0&&!s.er)s.msg+=' 🗝 Maxfiy xona ochildi: +40 🪙 va noyob hujjat!';if(!s.er)s.msg+=' 🧩 Xatosiz bob: Shifr ochish vositasi oldingiz.';s.st='choice'}
-function endg(s){s.st='end';s.end=s.ch>=8?(s.fl.ally>=3?'true':'secret'):'good';for(const id of s.m){const u=db.u[id];if(!u)continue;if(!u.end.includes(s.end))u.end.push(s.end);u.games++;pay(u,15,"O'yin yakuni bonusi");ach(u)}s.v++}
+function endg(s){s.st='end';(db.st[dk(Date.now())]||={gs:0,ge:0}).ge++;s.end=s.ch>=8?(s.fl.ally>=3?'true':'secret'):'good';for(const id of s.m){const u=db.u[id];if(!u)continue;if(!u.end.includes(s.end))u.end.push(s.end);u.games++;pay(u,15,"O'yin yakuni bonusi");ach(u)}s.v++}
 async function nxt(s){if(s.ch===8||s.ch>=10||(s.ch===7&&Object.keys(s.ev).length<7))return endg(s);s.ch++;if(s.ch>=9&&!prem(ow(s))){s.st='lock';s.v++;return}await chap(s)}
 const view=(s,uid)=>{const i=Math.max(0,s.m.indexOf(uid)),c=s.cur||{},u=db.u[uid]||{inv:{}},K=KS(s),ro=s.rl&&s.rl[uid];
  let cl=(c.c||[]).filter((_,j)=>j%s.n===i);if(s.n>1&&ro!==undefined&&ro===KR[K[s.step]]&&c.h)cl=[...cl,`🔎 ${ROLES[ro]} ma'lumoti: ${c.h}`];
  return{k:s.st,ch:s.ch,t:TT[s.ch],step:s.step+1,tot:K.length,story:c.story,clues:cl,role:s.n>1?`${i+1}/${s.n}`:'',rn:s.n>1&&ro!==undefined?ROLES[ro]:'',n:s.n,q:c.q,en:s.en,ev:s.ev,hint:c.hinted?c.h:'',fh:s.fh,dl:s.dl,v:s.v,msg:s.msg,fl:s.fl,end:s.end,ai:c.ai?1:0,tw:c.tw?1:0,coins:u.coins||0,cn:(s.cn||{})[uid]||0,cl:(s.cl===uid||!s.m.includes(s.cl))?1:0,kd:K[s.step],xh:c.xh||'',inv:u.inv,cln:s.cl&&db.u[s.cl]?nn(db.u[s.cl]):'',log:(s.log||[]).slice(-8),chat:(s.chat||[]).slice(-40),hi:u.inv.hint||0}};
-const ses=(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))throw new Error("O'yin topilmadi");return s};
-const DEF=()=>({coins:0,hist:[],inv:{},own:[],eq:{},nick:'',ok:0,bad:0,games:0,streak:0,days:[],ach:[],cnt:0,tw:0,clean:0,hardteam:0,col:[],qs:null,qd:{d:0,runs:0,best:0},qbest:0,qk:0,secret:0,dy:{d:0,ok:0,att:0}});
-const U=x=>{const u=db.u[x.id]||={id:x.id,max:1,done:[],ev:{},end:[],prem:0,room:null};const D=DEF();for(const k in D)if(!(k in u))u[k]=D[k];u.name=(x.first_name||"O'yinchi").slice(0,20);
+const ses=(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))E("O'yin topilmadi");return s};
+const DEF=()=>({coins:0,hist:[],inv:{},own:[],eq:{},nick:'',ok:0,bad:0,games:0,streak:0,days:[],ach:[],cnt:0,tw:0,clean:0,hardteam:0,bs:0,gs:0,src:'',ban:0,col:[],qs:null,qd:{d:0,runs:0,best:0},qbest:0,qk:0,secret:0,dy:{d:0,ok:0,att:0}});
+const U=x=>{const u=db.u[x.id]||={id:x.id,max:1,done:[],ev:{},end:[],prem:0,room:null};const D=DEF();for(const k in D)if(!(k in u))u[k]=D[k];u.name=(x.first_name||"O'yinchi").slice(0,20);u.last=Date.now();if(!u.first)u.first=Date.now();
  const t=new Date().toISOString().slice(0,10);if(!u.days.includes(t)){u.days.push(t);if(u.days.length>400)u.days.shift()}return u};
 const QW=['KALIT','DARYO','MASHAL','SOYA','TUMAN','ZANJIR'];
 const qk=r=>{const t=ri(r,0,4);if(t===0){const a=ri(r,2,30),b=ri(r,2,9),c=ri(r,2,9);return{q:`${a} + ${b} × ${c} = ?`,a:String(a+b*c)}}
@@ -161,7 +165,24 @@ const qv=u=>{const z=u.qs;return{q:z.T[z.i].q,i:z.i,ok:z.ok,st:z.st,score:z.scor
 const qf=u=>{const z=u.qs;z.end=1;const left=Math.max(0,6e4-(Date.now()-z.t0)-z.pen);if(z.i>=10)z.score+=Math.floor(left/10000);let c=0;
  if(u.qd.runs<3){c=Math.min(30,z.score);if(c)pay(u,c,'Tezkor sinov')}u.qd.runs++;if(z.score>u.qd.best)u.qd.best=z.score;if(z.score>u.qbest)u.qbest=z.score;u.qk+=z.ok;
  if(z.ms>=8)u.inv.kkey=(u.inv.kkey||0)+1;ach(u);return{end:1,score:z.score,ok:z.ok,ms:z.ms,coins:c,key:z.ms>=8?1:0,best:u.qd.best,gbest:u.qbest,runs:u.qd.runs}};
-const nn=u=>u.nick||u.name,pay=(u,n,w)=>{u.coins+=n;u.hist.unshift({t:Date.now(),n,w});if(u.hist.length>40)u.hist.length=40};
+const dash=()=>{const L=Object.values(db.u),now=Date.now(),day=n=>dk(now-n*864e5),cnt=n=>{const S=new Set(Array.from({length:n},(_,i)=>day(i)));return L.filter(u=>u.days.some(d=>S.has(d))).length};
+ const ss=Object.values(db.s).filter(s=>s.st!=='end'&&s.m.some(id=>db.u[id]&&now-(db.u[id].last||0)<3e5)),nw=n=>L.filter(u=>u.first&&now-u.first<n*864e5).length;
+ const series=Array.from({length:14},(_,i)=>{const d=day(13-i),x=db.st[d]||{};return{d:d.slice(5),act:L.filter(u=>u.days.includes(d)).length,nw:L.filter(u=>u.first&&dk(u.first)===d).length,gs:x.gs||0,ge:x.ge||0}});
+ const F=[['Botni /start qilgan',L.filter(u=>u.bs).length],['Mini App ochgan',L.length],["O'yinni boshlagan",L.filter(u=>u.gs>0).length],...[1,2,3,4,5,6,7,8].map(n=>[`${n}-bobni tugatgan`,L.filter(u=>u.done.includes(n)).length]),['Boshqa kuni qaytgan',L.filter(u=>u.days.length>=2).length]];
+ const SR={};L.forEach(u=>{const k=u.src||"(to'g'ridan)",o=SR[k]||={s:k,n:0,p:0,r:0};o.n++;if(u.gs>0)o.p++;if(u.days.length>=2)o.r++});
+ const top=[...L].sort((a,b)=>b.coins-a.coins).slice(0,10).map(u=>({id:u.id,n:nn(u),c:u.coins}));
+ return{total:L.length,dau:cnt(1),wau:cnt(7),mau:cnt(30),act:L.filter(u=>now-(u.last||0)<3e5).length,sg:ss.filter(s=>s.n===1).length,tg:ss.filter(s=>s.n>1).length,nw1:nw(1),nw7:nw(7),nw30:nw(30),series,F,
+  ch:Object.entries(db.cs).map(([n,x])=>({n:+n,...x})).sort((a,b)=>a.n-b.n),ks:Object.entries(db.ks).map(([k,x])=>({k,...x})).sort((a,b)=>(b.ok+b.bad)-(a.ok+a.bad)),src:Object.values(SR).sort((a,b)=>b.n-a.n).slice(0,10),
+  coins:{circ:L.reduce((a,u)=>a+u.coins,0),e:db.co.e,s:db.co.s,top},pay:{n:db.pay.length,stars:db.pay.reduce((a,p)=>a+p.a,0),prem:L.filter(u=>u.prem>now).length,fail:Math.max(0,db.pa-db.pay.length)},
+  tech:{up:Math.floor(process.uptime()),mem:Math.round(process.memoryUsage().rss/1048576),db:JSON.stringify(db).length,maint:db.cfg.maint,bc:db.bc},cfg:db.cfg,err:db.err.slice(0,30),alog:db.alog.slice(0,40),shop:IT.map(i=>({id:i.id,n:i.n,p:db.cfg.prices[i.id]||i.p}))}};
+const report=()=>{const d=dash(),t=d.series[13],e24=db.err.filter(e=>Date.now()-e.t<864e5).length,w=d.ch.filter(c=>c.st>=5).map(c=>({n:c.n,r:c.dn/c.st})).sort((a,b)=>a.r-b.r)[0];
+ return`📊 <b>LOOPBREAK — kunlik hisobot</b>\n\nYangi foydalanuvchilar: <b>+${d.nw1}</b>\nFaol (bugun): <b>${d.dau}</b>\nBoshlangan / tugatilgan o'yinlar: <b>${t.gs} / ${t.ge}</b>\nJami foydalanuvchilar: <b>${d.total}</b>\nXatolar (24 soat): <b>${e24}</b>\n\n💡 `+(w&&w.r<.5?`Tavsiya: ${w.n}-bobni yakunlash ko'rsatkichi ${Math.round(w.r*100)}%. Shu bobning qiyinligi va ishlashini tekshiring.`:"Tavsiya uchun hali yetarli ma'lumot yo'q (kamida 5 ta boshlangan bob kerak).")};
+async function sendBackup(){if(!AID)return false;try{const f=new FormData();f.append('chat_id',AID);f.append('caption','💾 LOOPBREAK zaxira '+dk(Date.now()));f.append('document',new Blob([JSON.stringify(db)],{type:'application/json'}),`loopbreak-${dk(Date.now())}.json`);const r=await fetch(`https://api.telegram.org/bot${T}/sendDocument`,{method:'POST',body:f}).then(r=>r.json());return!!r.ok}catch(e){elog('backup',e.message);return false}}
+function jobs(){if(!AID)return;if(Date.now()-(db.cfg.ls||0)>36e5){db.cfg.ls=Date.now();tg('sendMessage',{chat_id:AID,text:'🟢 LOOPBREAK ishga tushdi'})}let la=0;
+ setInterval(()=>{const n=db.err.filter(e=>Date.now()-e.t<6e5).length;if(n>=10&&Date.now()-la>36e5){la=Date.now();tg('sendMessage',{chat_id:AID,text:`⚠️ Oxirgi 10 daqiqada ${n} ta xato. Mini App → Admin → Jurnal bo'limini tekshiring.`})}},6e4);
+ setInterval(()=>{const k=dk(Date.now());if(new Date().getUTCHours()===4&&db.cfg.lr!==k){db.cfg.lr=k;save();tg('sendMessage',{chat_id:AID,text:report(),parse_mode:'HTML'})}},6e5);
+ setInterval(sendBackup,432e5)}
+const nn=u=>u.nick||u.name,pay=(u,n,w)=>{u.coins+=n;db.co[n>0?'e':'s']+=Math.abs(n);u.hist.unshift({t:Date.now(),n,w});if(u.hist.length>40)u.hist.length=40};
 const AC=[['first','Birinchi qadam','1-bobni tugatish',20,u=>u.done.includes(1)],['sharp',"O'tkir zehn","Ketma-ket 5 ta to'g'ri javob",30,u=>u.streak>=5],['hero','Jamoa qahramoni','Jamoa bilan bobni yakunlash',50,u=>u.tw>0],['truth','Yashirin haqiqat','Yashirin yoki haqiqiy yakunni ochish',100,u=>u.end.some(e=>e!=='good')],['ten','Chempion','10 ta bobni tugatish',60,u=>u.cnt>=10],['three','Uch yakun','3 xil yakunni ochish',80,u=>u.end.length>=3],['week','7 kun',"7 kun o'ynash",70,u=>u.days.length>=7],['clean','Xatosiz bob','Bobni birorta xatosiz tugatish',40,u=>u.clean>0],['hard','Eng qiyin bob','7-bobni jamoa bilan yengish',80,u=>u.hardteam>0],['master','Shifr ustasi','30 ta tezkor javob',60,u=>u.qk>=30],['shadow','Soya detektivi','Maxfiy xona yoki yashirin yakunni ochish',90,u=>u.secret>0||u.end.includes('secret')],['legend','Afsonaviy tergovchi','8 asosiy bobni tugatish',150,u=>[1,2,3,4,5,6,7,8].every(c=>u.done.includes(c))]];
 const ach=u=>{for(const a of AC)if(!u.ach.includes(a[0])&&a[4](u)){u.ach.push(a[0]);pay(u,a[3],'🏆 '+a[1])}};
 const IT=[{id:'crown',n:'👑 Chat toji',p:100,k:'own',d:"Chatda ismingiz oldida toj"},{id:'e_wolf',n:"🐺 Bo'ri",p:40,k:'emo',v:'🐺',d:'Chat emojisi'},{id:'e_skull',n:'💀 Bosh suyagi',p:40,k:'emo',v:'💀',d:'Chat emojisi'},{id:'e_det',n:'🕵️ Detektiv',p:40,k:'emo',v:'🕵️',d:'Chat emojisi'},{id:'e_fire',n:'🔥 Olov',p:40,k:'emo',v:'🔥',d:'Chat emojisi'},
@@ -178,15 +199,15 @@ const KS=s=>(s.pl&&s.pl[s.ch])||PL[s.ch];
 const DK=['cipher','mind','order','roles','sudo','dial','lcm','vig','maze','eq','clock','book'],dayN=()=>Math.floor(Date.now()/864e5);
 const dgen=()=>{const n=dayN(),k=DK[n%DK.length];return{k,p:G[k](rng(n*7919+13),4+(n%5),{},'')}};
 const dyc=u=>{if(u.dy.d!==dayN())u.dy={d:dayN(),ok:0,att:0};return u.dy};
-const E=m=>{throw new Error(m)};
+const E=m=>{const e=new Error(m);e.u=1;throw e};
 const H={
- me:u=>{ach(u);return{id:u.id,name:nn(u),tg:u.name,nick:u.nick,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,coins:u.coins,hist:u.hist.slice(0,25),own:u.own,eq:u.eq,inv:u.inv,ok:u.ok,bad:u.bad,games:u.games,days:u.days.length,cnt:u.cnt,items:IT,col:u.col,qk:u.qk,qbest:u.qbest,title:u.ach.includes('legend')?'Afsonaviy tergovchi':u.ach.includes('shadow')?'Soya detektivi':u.ach.includes('master')?'Shifr ustasi':'',idefs:Object.entries(ID).map(([id,d])=>({id,n:d.n,d:d.d,k:d.k})),acs:AC.map(a=>({id:a[0],t:a[1],d:a[2],c:a[3],done:u.ach.includes(a[0])})),room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=9&&!prem(u),open:n<=u.max})).slice(1)}},
- solo:async(u,b)=>{const n=+b.ch;if(!(n>=1&&n<=10))E('Bunday bob yo\'q');if(n>u.max)E('Bu bob hali yopiq');if(n>=9&&!prem(u))E("Bu bob Premium uchun. Botda 💎 Premium bo'limiga kiring.");const s=db.s['s'+u.id]=mk([u.id],n,u.ev,1);await chap(s);return view(s,u.id)},
+ me:u=>{ach(u);return{id:u.id,name:nn(u),tg:u.name,nick:u.nick,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,coins:u.coins,hist:u.hist.slice(0,25),own:u.own,eq:u.eq,inv:u.inv,ok:u.ok,bad:u.bad,games:u.games,days:u.days.length,cnt:u.cnt,admin:isAdm(u.id),items:IT.map(i=>({...i,p:db.cfg.prices[i.id]||i.p})),col:u.col,qk:u.qk,qbest:u.qbest,title:u.ach.includes('legend')?'Afsonaviy tergovchi':u.ach.includes('shadow')?'Soya detektivi':u.ach.includes('master')?'Shifr ustasi':'',idefs:Object.entries(ID).map(([id,d])=>({id,n:d.n,d:d.d,k:d.k})),acs:AC.map(a=>({id:a[0],t:a[1],d:a[2],c:a[3],done:u.ach.includes(a[0])})),room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=9&&!prem(u),open:n<=u.max})).slice(1)}},
+ solo:async(u,b)=>{const n=+b.ch;if(!(n>=1&&n<=10))E('Bunday bob yo\'q');if(n>u.max)E('Bu bob hali yopiq');if(n>=9&&!prem(u))E("Bu bob Premium uchun. Botda 💎 Premium bo'limiga kiring.");const s=db.s['s'+u.id]=mk([u.id],n,u.ev,1);u.gs++;(db.st[dk(Date.now())]||={gs:0,ge:0}).gs++;await chap(s);return view(s,u.id)},
  state:async(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))return{k:'none'};if(s.st==='lock'&&prem(ow(s))){s.msg='💎 Premium faol!';await chap(s)}return view(s,u.id)},
  answer:async(u,b)=>{const s=ses(u,b);if(s.st!=='puz')return view(s,u.id);
   if(s.lk>Date.now())E(`Ko'p xato qildingiz. ${Math.ceil((s.lk-Date.now())/1000)} soniya o'ylab ko'ring.`);
-  if(norm(b.a)===norm(s.cur.a)){const c=2+3*s.ch;pay(u,c,`${s.ch}-bob: to'g'ri javob`);(s.cn=s.cn||{})[u.id]=(s.cn[u.id]||0)+c;u.ok++;u.streak++;ach(u);s.msg=`✅ ${nn(u)} to'g'ri topdi! +${c} 🪙`;s.prev=s.cur.a;s.att=0;s.lk=0;s.step++;if(s.step>=KS(s).length)fin(s);else await enter(s)}
-  else{u.bad++;u.streak=0;s.er=(s.er||0)+1;s.att=(s.att||0)+1;if(s.att>=3)s.lk=Date.now()+3e4*(s.att-2);let c=10+2*s.ch,sh='';
+  if(norm(b.a)===norm(s.cur.a)){(db.ks[KS(s)[s.step]]||={ok:0,bad:0}).ok++;const c=Math.max(1,Math.round((2+3*s.ch)*db.cfg.coinMul));pay(u,c,`${s.ch}-bob: to'g'ri javob`);(s.cn=s.cn||{})[u.id]=(s.cn[u.id]||0)+c;u.ok++;u.streak++;ach(u);s.msg=`✅ ${nn(u)} to'g'ri topdi! +${c} 🪙`;s.prev=s.cur.a;s.att=0;s.lk=0;s.step++;if(s.step>=KS(s).length)fin(s);else await enter(s)}
+  else{(db.cs[s.ch]||={st:0,dn:0,er:0}).er++;(db.ks[KS(s)[s.step]]||={ok:0,bad:0}).bad++;u.bad++;u.streak=0;s.er=(s.er||0)+1;s.att=(s.att||0)+1;if(s.att>=3)s.lk=Date.now()+3e4*(s.att-2);let c=10+2*s.ch,sh='';
    if(u.inv.shield>0){u.inv.shield--;c=0;sh=' 🛡️ Himoya ishladi.'}else if(s.n>1&&!s.sh&&s.m.some(id=>s.rl&&s.rl[id]===4)){s.sh=1;c=0;sh=' 🛡️ Himoyachi jamoani himoya qildi.'}
    s.en-=c;s.msg=`❌ ${nn(u)}: noto'g'ri. −${c} energiya.${sh}${s.att>=3?' Kutish jazosi.':''}`;await hurt(s)}
   s.v++;return view(s,u.id)},
@@ -196,6 +217,21 @@ const H={
   if(b.c==='a'){s.m.forEach(id=>{const x=db.u[id];if(x)x.inv.lamp=(x.inv.lamp||0)+1});s.fl.ally++;s.en=Math.min(100,s.en+30);s.msg="🤝 Jamoani qutqardingiz: ittifoqchi paydo bo'ldi (+30 energiya), hammaga 🔦 Fonar berildi.";(s.log=s.log||[]).push('🤝 Jamoa qutqarildi')}
   else{u.inv.kkey=(u.inv.kkey||0)+1;s.fl.hid++;s.en=Math.max(10,s.en-20);s.msg='🕵️ Haqiqatni tanladingiz (−20 energiya). Yashirin dalil sizda, 🗝️ Kalit topdingiz.';(s.log=s.log||[]).push('🕵️ Haqiqat tanlandi')}
   await nxt(s);s.v++;return view(s,u.id)},
+ a_dash:()=>dash(),
+ a_find:(u,b)=>{const q=String(b.q||'').trim().toLowerCase();if(!q)return[];return Object.values(db.u).filter(x=>String(x.id)===q||nn(x).toLowerCase().includes(q)||(x.name||'').toLowerCase().includes(q)).slice(0,8).map(x=>({id:x.id,n:nn(x),tg:x.name,coins:x.coins,last:x.last,first:x.first,ok:x.ok,bad:x.bad,done:x.done,games:x.games,ban:x.ban,prem:x.prem,src:x.src}))},
+ a_uact:(u,b)=>{const x=db.u[b.id];if(!x)E('Topilmadi');
+  if(b.act==='coins'){const n=Math.trunc(+b.n),w=String(b.why||'').trim().slice(0,80);if(!n||Math.abs(n)>100000)E("Miqdor noto'g'ri");if(!w)E('Sabab yozing');pay(x,n,'👑 Admin: '+w);alog(`tanga ${n>0?'+':''}${n} → ${nn(x)} (${x.id}): ${w}`)}
+  else if(b.act==='ban'||b.act==='unban'){x.ban=b.act==='ban'?1:0;alog(`${b.act} → ${nn(x)} (${x.id})`)}else E('?');return{ok:1}},
+ a_bc:async(u,b)=>{const t=String(b.text||'').trim().slice(0,3500);if(!t)E("Matn bo'sh");if(b.test){await tg('sendMessage',{chat_id:AID,text:'🧪 TEST:\n\n'+t});alog('test xabar');return{ok:1}}
+  if(db.bc&&db.bc.run)E('Oldingi yuborish tugamagan');const ids=Object.values(db.u).filter(x=>x.bs&&!x.ban).map(x=>x.id);db.bc={run:1,total:ids.length,sent:0,fail:0,t:Date.now(),text:t.slice(0,60)};alog(`ommaviy xabar: ${ids.length} kishi`);
+  (async()=>{for(const id of ids){const r=await tg('sendMessage',{chat_id:id,text:t});r.ok?db.bc.sent++:db.bc.fail++;await new Promise(r=>setTimeout(r,45))}db.bc.run=0;save()})();return db.bc},
+ a_cfg:(u,b)=>{const c=db.cfg,v=b.v;
+  if(b.k==='maint')c.maint=String(v||'').slice(0,200);
+  else if(b.k==='coinMul'||b.k==='timeMul'){const n=+v;if(!(n>=.5&&n<=5))E("0.5 dan 5 gacha bo'lsin");c[b.k]=n}
+  else if(b.k==='daily'){const n=Math.trunc(+v);if(!(n>=0&&n<=500))E("0 dan 500 gacha bo'lsin");c.daily=n}
+  else if(b.k==='price'){const it=IT.find(i=>i.id===b.id),n=Math.trunc(+v);if(!it||!(n>=1&&n<=10000))E("Narx noto'g'ri");c.prices[it.id]=n}
+  else E('?');alog(`sozlama ${b.k}${b.id?':'+b.id:''} = ${v}`);return dash()},
+ a_backup:async()=>{const ok=await sendBackup();alog('zaxira yuborildi');return{ok}},
  useitem:async(u,b)=>{const s=ses(u,b),d=ID[b.id];if(!d)E('Buyum topilmadi');if(s.st!=='puz')return view(s,u.id);const kind=KS(s)[s.step];if(!d.k.includes(kind))E(`${d.n} bu turdagi jumboqda ishlamaydi`);if(!(u.inv[b.id]>0))E("Sizda bu buyum yo'q");if(s.cur.xh)E('Bu jumboqda ishora allaqachon ochilgan');
   u.inv[b.id]--;const a=String(s.cur.a);s.cur.xh=`${d.n}: javob ${a.length} belgidan iborat, birinchisi «${a[0]}»`;s.msg=`${d.n} ishlatildi.`;s.v++;return view(s,u.id)},
  qinfo:u=>{const d=dayN(),q=u.qd.d===d?u.qd:{runs:0,best:0};return{best:q.best,runs:q.runs,gbest:u.qbest,top:Object.values(db.u).filter(x=>x.qd&&x.qd.d===d&&x.qd.best>0).sort((a,b)=>b.qd.best-a.qd.best).slice(0,5).map(x=>({n:nn(x),s:x.qd.best}))}},
@@ -203,14 +239,14 @@ const H={
  qans:(u,b)=>{const z=u.qs;if(!z||z.end)E('Sinov boshlanmagan');let left=6e4-(Date.now()-z.t0)-z.pen;if(left<=0)return qf(u);
   if(norm(b.a)===norm(z.T[z.i].a)){z.ok++;z.st++;z.ms=Math.max(z.ms,z.st);z.score+=1+Math.floor(z.st/3)}else{z.st=0;z.pen+=5000}
   z.i++;left=6e4-(Date.now()-z.t0)-z.pen;if(z.i>=10||left<=0)return qf(u);return qv(u)},
- buy:(u,b)=>{const it=IT.find(x=>x.id===b.id);if(!it)E('Buyum topilmadi');if(u.coins<it.p)E(`Tanga yetmaydi: ${it.p} 🪙 kerak`);
+ buy:(u,b)=>{const it=IT.find(x=>x.id===b.id);if(!it)E('Buyum topilmadi');const PR=db.cfg.prices[it.id]||it.p;if(u.coins<PR)E(`Tanga yetmaydi: ${PR} 🪙 kerak`);
   if(it.k==='cons')u.inv[it.id]=(u.inv[it.id]||0)+1;else{if(u.own.includes(it.id))E('Bu buyumni allaqachon olgansiz');u.own.push(it.id);if(it.v)u.eq[it.k==='emo'?'emoji':it.k]=it.v}
-  pay(u,-it.p,`Xarid: ${it.n}`);return H.me(u)},
+  pay(u,-PR,`Xarid: ${it.n}`);return H.me(u)},
  equip:(u,b)=>{const it=IT.find(x=>x.id===b.id);if(!it||!it.v||!u.own.includes(it.id))E('Avval sotib oling');const k=it.k==='emo'?'emoji':it.k;if(u.eq[k]===it.v)delete u.eq[k];else u.eq[k]=it.v;return H.me(u)},
  nick:(u,b)=>{const n=String(b.n||'').trim();if(!/^[A-Za-z0-9_]{3,16}$/.test(n))E("Nik 3–16 belgi bo'lsin: lotin harf, raqam yoki _");if(/(admin|fuck|shit|bitch|sikaman|qotoq|jinni|loopbreak)/i.test(n))E("Bu nikdan foydalanib bo'lmaydi");
   if(Object.values(db.u).some(x=>x.id!==u.id&&(x.nick||'').toLowerCase()===n.toLowerCase()))E('Bu nik band');u.nick=n;return H.me(u)},
  daily:u=>{const g=dgen(),t=dyc(u);return{c:g.p.c,q:g.p.q,ok:t.ok,att:t.att,max:5}},
- dailyans:(u,b)=>{const g=dgen(),t=dyc(u);if(t.ok)E('Bugun bajarilgan');if(t.att>=5)E('Bugungi urinishlar tugadi');if(norm(b.a)===norm(g.p.a)){t.ok=1;pay(u,25,'Kun jumboqi');return{r:'ok'}}t.att++;return{r:'bad'}},
+ dailyans:(u,b)=>{const g=dgen(),t=dyc(u);if(t.ok)E('Bugun bajarilgan');if(t.att>=5)E('Bugungi urinishlar tugadi');if(norm(b.a)===norm(g.p.a)){t.ok=1;pay(u,db.cfg.daily,'Kun jumboqi');return{r:'ok',c:db.cfg.daily}}t.att++;return{r:'bad'}},
  rcreate:(u,b)=>{if(db.r[u.room])E('Avval joriy xonadan chiqing');const size=Math.min(6,Math.max(2,+b.size||2));let c;do c=Math.random().toString(36).slice(2,7).toUpperCase();while(db.r[c]);
   db.r[c]={code:c,name:String(b.name||'Jamoa').trim().slice(0,24)||'Jamoa',size,owner:u.id,mem:[{id:u.id,name:u.name,ready:false}],started:0};u.room=c;return db.r[c]},
  rjoin:(u,b)=>{const r=db.r[String(b.code||'').trim().toUpperCase()];if(!r)E('Xona topilmadi');if(r.mem.some(m=>m.id===u.id)){u.room=r.code;return r}
@@ -221,7 +257,7 @@ const H={
  rstart:async(u,b)=>{const r=H.room(u,b);if(r.owner!==u.id)E('Faqat xona egasi boshlay oladi');if(r.started)return r;
   if(r.mem.length<r.size)E('Xona hali to\'lmagan');if(r.mem.some(m=>!m.ready))E('Hamma tayyor emas');
   const o=db.u[r.owner];let ch=Math.min(o.max,10);if(ch>=9&&!prem(o))ch=8;r.started=1;
-  const s=db.s['r'+r.code]=mk(r.mem.map(m=>m.id),ch,o.ev,r.size);await chap(s);return r},
+  const s=db.s['r'+r.code]=mk(r.mem.map(m=>m.id),ch,o.ev,r.size);r.mem.forEach(m=>{if(db.u[m.id])db.u[m.id].gs++});(db.st[dk(Date.now())]||={gs:0,ge:0}).gs++;await chap(s);return r},
  rleave:(u,b)=>{const r=db.r[String(b.code).toUpperCase()];u.room=null;if(!r)return{ok:1};
   r.mem=r.mem.filter(m=>m.id!==u.id);
   if(r.started){const s=db.s['r'+r.code];if(s){s.m=s.m.filter(x=>x!==u.id);s.n=Math.max(1,s.m.length);if(!s.m.length)delete db.s['r'+r.code];else{(s.chat=s.chat||[]).push({id:0,n:'⚙️',t:`${nn(u)} jamoani tark etdi`,p:'',nc:''});(s.log=s.log||[]).push(`${nn(u)} tark etdi`);s.v++}}
@@ -237,7 +273,7 @@ function auth(h){const p=new URLSearchParams(h||'');const hash=p.get('hash');if(
 const send=(res,c,j)=>{res.writeHead(c,{'Content-Type':'application/json'});res.end(JSON.stringify(j))};
 const server=http.createServer(async(q,res)=>{
  if(q.method==='POST'&&q.url.startsWith('/api/')){let b='';for await(const c of q)b+=c;
-  try{const x=auth(q.headers['x-init']);if(!x)E("Telegram tasdiqlashi noto'g'ri. O'yinni bot orqali oching.");const u=U(x),h=H[q.url.slice(5)];if(!h)E('?');const j=await h(u,JSON.parse(b||'{}'));save();send(res,200,j)}catch(e){send(res,400,{e:e.message})}}
+  try{const x=auth(q.headers['x-init']);if(!x)E("Telegram tasdiqlashi noto'g'ri. O'yinni bot orqali oching.");const k=q.url.slice(5),u=U(x),h=H[k];if(!h||(k.startsWith('a_')&&!isAdm(x.id)))E('?');if(!isAdm(x.id)){if(db.cfg.maint)E('🔧 Texnik ishlar: '+db.cfg.maint);if(u.ban)E('Hisobingiz cheklangan')}const j=await h(u,JSON.parse(b||'{}'));save();send(res,200,j)}catch(e){if(!e.u)elog('api',`${q.url}: ${e.message}`);send(res,400,{e:e.message})}}
  else{res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(fs.readFileSync(path.join(__dirname,'index.html')))}});
 // ---------- Bot ----------
 const menu={inline_keyboard:[[{text:"🎮 O'yinni ochish",web_app:{url:WU}}],[{text:"📖 O'yin haqida",callback_data:'about'},{text:'💎 Premium',callback_data:'prem'}],[{text:'👑 Admin',callback_data:'adm'}]]};
@@ -247,10 +283,10 @@ const ABOUT="📖 <b>LOOPBREAK haqida</b>\n\nBu oddiy savol-javob emas, haqiqiy 
 const PREM="💎 <b>Premium</b>\n\n9-bob (Soya laboratoriyasi) va 10-bob (Oxirgi qo'ng'iroq) faqat Premium obunachilar uchun.\n\nNarxi: <b>250 ⭐ / 30 kun</b>";
 const invoice=id=>tg('sendInvoice',{chat_id:id,title:'LOOPBREAK Premium',description:"30 kun: 9 va 10-boblar ochiladi",payload:'prem30',provider_token:'',currency:'XTR',prices:[{label:'Premium 30 kun',amount:250}]});
 async function upd(x){
- if(x.pre_checkout_query)return tg('answerPreCheckoutQuery',{pre_checkout_query_id:x.pre_checkout_query.id,ok:true});
- const m=x.message;
- if(m?.successful_payment){const u=U(m.from);u.prem=Math.max(Date.now(),u.prem)+30*864e5;save();return tg('sendMessage',{chat_id:m.chat.id,text:'✅ Premium faollashdi! Mini Appni qayta oching.',reply_markup:menu})}
- if(m?.text?.startsWith('/start')){if(m.text.includes('prem')){await tg('sendMessage',{chat_id:m.chat.id,text:PREM,parse_mode:'HTML'});return invoice(m.chat.id)}
+ if(x.pre_checkout_query){db.pa++;save();return tg('answerPreCheckoutQuery',{pre_checkout_query_id:x.pre_checkout_query.id,ok:true})}
+ const m=x.message;if(m?.text==='/stats'&&isAdm(m.from.id))return tg('sendMessage',{chat_id:m.chat.id,text:report(),parse_mode:'HTML'});
+ if(m?.successful_payment){const u=U(m.from),chg=m.successful_payment.telegram_payment_charge_id;if(db.pay.some(p=>p.id===chg))return;db.pay.push({t:Date.now(),u:u.id,a:m.successful_payment.total_amount,id:chg});u.prem=Math.max(Date.now(),u.prem)+30*864e5;save();return tg('sendMessage',{chat_id:m.chat.id,text:'✅ Premium faollashdi! Mini Appni qayta oching.',reply_markup:menu})}
+ if(m?.text?.startsWith('/start')){const uu=U(m.from);uu.bs=1;const sp=m.text.split(' ')[1];if(!uu.src&&sp&&sp!=='prem')uu.src=sp.slice(0,20);save();if(m.text.includes('prem')){await tg('sendMessage',{chat_id:m.chat.id,text:PREM,parse_mode:'HTML'});return invoice(m.chat.id)}
   return tg('sendMessage',{chat_id:m.chat.id,text:HOME,parse_mode:'HTML',reply_markup:menu})}
  const c=x.callback_query;if(!c)return;tg('answerCallbackQuery',{callback_query_id:c.id});
  const e=t=>tg('editMessageText',{chat_id:c.message.chat.id,message_id:c.message.message_id,text:t,parse_mode:'HTML',reply_markup:t===HOME?menu:back});
@@ -259,6 +295,6 @@ async function upd(x){
  if(c.data==='prem'){await e(PREM);return invoice(c.message.chat.id)}}
 async function poll(){await tg('deleteWebhook',{});await tg('setChatMenuButton',{menu_button:{type:'web_app',text:"O'ynash",web_app:{url:WU}}});let o=0;
  for(;;){const r=await tg('getUpdates',{offset:o,timeout:30,allowed_updates:['message','callback_query','pre_checkout_query']});
-  for(const x of r.result||[]){o=x.update_id+1;try{await upd(x)}catch(e){console.error(e)}}if(!r.ok)await new Promise(r=>setTimeout(r,3000))}}
-if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ'));poll()}
-module.exports={G,PL,auth,H,db,U};
+  for(const x of r.result||[]){o=x.update_id+1;try{await upd(x)}catch(e){console.error(e);elog('bot',e.message)}}if(!r.ok){elog('bot','getUpdates javob bermadi');await new Promise(r=>setTimeout(r,3000))}}}
+if(require.main===module){if(!T||!WU){console.error('BOT_TOKEN va WEBAPP_URL kerak');process.exit(1)}server.listen(PORT,()=>console.log('LOOPBREAK ishga tushdi:',PORT,'| AI:',AK?'kalit bor':'kalit YOQ','| Admin:',AID?'bor':'YOQ'));poll();jobs()}
+module.exports={G,PL,auth,H,db,U,server};
