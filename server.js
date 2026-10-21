@@ -201,7 +201,7 @@ const dgen=()=>{const n=dayN(),k=DK[n%DK.length];return{k,p:G[k](rng(n*7919+13),
 const dyc=u=>{if(u.dy.d!==dayN())u.dy={d:dayN(),ok:0,att:0};return u.dy};
 const E=m=>{const e=new Error(m);e.u=1;throw e};
 const H={
- me:u=>{ach(u);return{id:u.id,name:nn(u),tg:u.name,nick:u.nick,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,coins:u.coins,hist:u.hist.slice(0,25),own:u.own,eq:u.eq,inv:u.inv,ok:u.ok,bad:u.bad,games:u.games,days:u.days.length,cnt:u.cnt,admin:isAdm(u.id),items:IT.map(i=>({...i,p:db.cfg.prices[i.id]||i.p})),col:u.col,qk:u.qk,qbest:u.qbest,title:u.ach.includes('legend')?'Afsonaviy tergovchi':u.ach.includes('shadow')?'Soya detektivi':u.ach.includes('master')?'Shifr ustasi':'',idefs:Object.entries(ID).map(([id,d])=>({id,n:d.n,d:d.d,k:d.k})),acs:AC.map(a=>({id:a[0],t:a[1],d:a[2],c:a[3],done:u.ach.includes(a[0])})),room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=9&&!prem(u),open:n<=u.max})).slice(1)}},
+ me:u=>{ach(u);return{id:u.id,name:nn(u),tg:u.name,nick:u.nick,max:u.max,done:u.done,ev:u.ev,end:u.end,prem:u.prem,coins:u.coins,hist:u.hist.slice(0,25),own:u.own,eq:u.eq,inv:u.inv,ok:u.ok,bad:u.bad,games:u.games,days:u.days.length,cnt:u.cnt,admin:isAdm(u.id),bs:u.bs,items:IT.map(i=>({...i,p:db.cfg.prices[i.id]||i.p})),col:u.col,qk:u.qk,qbest:u.qbest,title:u.ach.includes('legend')?'Afsonaviy tergovchi':u.ach.includes('shadow')?'Soya detektivi':u.ach.includes('master')?'Shifr ustasi':'',idefs:Object.entries(ID).map(([id,d])=>({id,n:d.n,d:d.d,k:d.k})),acs:AC.map(a=>({id:a[0],t:a[1],d:a[2],c:a[3],done:u.ach.includes(a[0])})),room:db.r[u.room]?u.room:null,solo:!!(db.s['s'+u.id]&&db.s['s'+u.id].st!=='end'),ch:TT.map((t,n)=>({n,t,lock:n>=9&&!prem(u),open:n<=u.max})).slice(1)}},
  solo:async(u,b)=>{const n=+b.ch;if(!(n>=1&&n<=10))E('Bunday bob yo\'q');if(n>u.max)E('Bu bob hali yopiq');if(n>=9&&!prem(u))E("Bu bob Premium uchun. Botda 💎 Premium bo'limiga kiring.");const s=db.s['s'+u.id]=mk([u.id],n,u.ev,1);u.gs++;(db.st[dk(Date.now())]||={gs:0,ge:0}).gs++;await chap(s);return view(s,u.id)},
  state:async(u,b)=>{const s=db.s[b.room?'r'+String(b.room).toUpperCase():'s'+u.id];if(!s||!s.m.includes(u.id))return{k:'none'};if(s.st==='lock'&&prem(ow(s))){s.msg='💎 Premium faol!';await chap(s)}return view(s,u.id)},
  answer:async(u,b)=>{const s=ses(u,b);if(s.st!=='puz')return view(s,u.id);
@@ -223,7 +223,7 @@ const H={
   if(b.act==='coins'){const n=Math.trunc(+b.n),w=String(b.why||'').trim().slice(0,80);if(!n||Math.abs(n)>100000)E("Miqdor noto'g'ri");if(!w)E('Sabab yozing');pay(x,n,'👑 Admin: '+w);alog(`tanga ${n>0?'+':''}${n} → ${nn(x)} (${x.id}): ${w}`)}
   else if(b.act==='ban'||b.act==='unban'){x.ban=b.act==='ban'?1:0;alog(`${b.act} → ${nn(x)} (${x.id})`)}else E('?');return{ok:1}},
  a_bc:async(u,b)=>{const t=String(b.text||'').trim().slice(0,3500);if(!t)E("Matn bo'sh");if(b.test){await tg('sendMessage',{chat_id:AID,text:'🧪 TEST:\n\n'+t});alog('test xabar');return{ok:1}}
-  if(db.bc&&db.bc.run)E('Oldingi yuborish tugamagan');const ids=Object.values(db.u).filter(x=>x.bs&&!x.ban).map(x=>x.id);db.bc={run:1,total:ids.length,sent:0,fail:0,t:Date.now(),text:t.slice(0,60)};alog(`ommaviy xabar: ${ids.length} kishi`);
+  if(db.bc&&db.bc.run)E('Oldingi yuborish tugamagan');const ids=Object.values(db.u).filter(x=>!x.ban).map(x=>x.id);db.bc={run:1,total:ids.length,sent:0,fail:0,t:Date.now(),text:t.slice(0,60)};alog(`ommaviy xabar: ${ids.length} kishi`);
   (async()=>{for(const id of ids){const r=await tg('sendMessage',{chat_id:id,text:t});r.ok?db.bc.sent++:db.bc.fail++;await new Promise(r=>setTimeout(r,45))}db.bc.run=0;save()})();return db.bc},
  a_cfg:(u,b)=>{const c=db.cfg,v=b.v;
   if(b.k==='maint')c.maint=String(v||'').slice(0,200);
@@ -284,7 +284,7 @@ const PREM="💎 <b>Premium</b>\n\n9-bob (Soya laboratoriyasi) va 10-bob (Oxirgi
 const invoice=id=>tg('sendInvoice',{chat_id:id,title:'LOOPBREAK Premium',description:"30 kun: 9 va 10-boblar ochiladi",payload:'prem30',provider_token:'',currency:'XTR',prices:[{label:'Premium 30 kun',amount:250}]});
 async function upd(x){
  if(x.pre_checkout_query){db.pa++;save();return tg('answerPreCheckoutQuery',{pre_checkout_query_id:x.pre_checkout_query.id,ok:true})}
- const m=x.message;if(m?.text==='/stats'&&isAdm(m.from.id))return tg('sendMessage',{chat_id:m.chat.id,text:report(),parse_mode:'HTML'});
+ const m=x.message;if(m&&m.from)U(m.from).bs=1;if(x.callback_query)U(x.callback_query.from).bs=1;if(m?.text==='/stats'&&isAdm(m.from.id))return tg('sendMessage',{chat_id:m.chat.id,text:report(),parse_mode:'HTML'});
  if(m?.successful_payment){const u=U(m.from),chg=m.successful_payment.telegram_payment_charge_id;if(db.pay.some(p=>p.id===chg))return;db.pay.push({t:Date.now(),u:u.id,a:m.successful_payment.total_amount,id:chg});u.prem=Math.max(Date.now(),u.prem)+30*864e5;save();return tg('sendMessage',{chat_id:m.chat.id,text:'✅ Premium faollashdi! Mini Appni qayta oching.',reply_markup:menu})}
  if(m?.text?.startsWith('/start')){const uu=U(m.from);uu.bs=1;const sp=m.text.split(' ')[1];if(!uu.src&&sp&&sp!=='prem')uu.src=sp.slice(0,20);save();if(m.text.includes('prem')){await tg('sendMessage',{chat_id:m.chat.id,text:PREM,parse_mode:'HTML'});return invoice(m.chat.id)}
   return tg('sendMessage',{chat_id:m.chat.id,text:HOME,parse_mode:'HTML',reply_markup:menu})}
