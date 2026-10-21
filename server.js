@@ -223,8 +223,8 @@ const H={
   if(b.act==='coins'){const n=Math.trunc(+b.n),w=String(b.why||'').trim().slice(0,80);if(!n||Math.abs(n)>100000)E("Miqdor noto'g'ri");if(!w)E('Sabab yozing');pay(x,n,'👑 Admin: '+w);alog(`tanga ${n>0?'+':''}${n} → ${nn(x)} (${x.id}): ${w}`)}
   else if(b.act==='ban'||b.act==='unban'){x.ban=b.act==='ban'?1:0;alog(`${b.act} → ${nn(x)} (${x.id})`)}else E('?');return{ok:1}},
  a_bc:async(u,b)=>{const t=String(b.text||'').trim().slice(0,3500);if(!t)E("Matn bo'sh");if(b.test){await tg('sendMessage',{chat_id:AID,text:'🧪 TEST:\n\n'+t});alog('test xabar');return{ok:1}}
-  if(db.bc&&db.bc.run)E('Oldingi yuborish tugamagan');const ids=Object.values(db.u).filter(x=>!x.ban).map(x=>x.id);db.bc={run:1,total:ids.length,sent:0,fail:0,t:Date.now(),text:t.slice(0,60)};alog(`ommaviy xabar: ${ids.length} kishi`);
-  (async()=>{for(const id of ids){const r=await tg('sendMessage',{chat_id:id,text:t});r.ok?db.bc.sent++:db.bc.fail++;await new Promise(r=>setTimeout(r,45))}db.bc.run=0;save()})();return db.bc},
+  if(db.bc&&db.bc.run)E('Oldingi yuborish tugamagan');const ids=Object.values(db.u).filter(x=>!x.ban).map(x=>x.id);db.bc={run:1,total:ids.length,sent:0,fail:0,er:[],t:Date.now(),text:t.slice(0,60)};alog(`ommaviy xabar: ${ids.length} kishi`);
+  (async()=>{for(const id of ids){const r=await tg('sendMessage',{chat_id:id,text:t});if(r.ok)db.bc.sent++;else{db.bc.fail++;const er=db.bc.er||(db.bc.er=[]);if(er.length<8)er.push(`${id}: ${r.description||'Telegramdan javob kelmadi'}`)}await new Promise(r=>setTimeout(r,45))}db.bc.run=0;save()})();return db.bc},
  a_cfg:(u,b)=>{const c=db.cfg,v=b.v;
   if(b.k==='maint')c.maint=String(v||'').slice(0,200);
   else if(b.k==='coinMul'||b.k==='timeMul'){const n=+v;if(!(n>=.5&&n<=5))E("0.5 dan 5 gacha bo'lsin");c[b.k]=n}
